@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+model AdminUser {
+  id                        String   @id @default(uuid())
+  email                     String   @unique
+  passwordHash              String
+  name                      String
+  phone                     String?
+  whatsappNumber            String?
+  whatsappEnabled           Boolean  @default(true)
+  whatsappNotifyOnCheckout  Boolean  @default(true)
+  whatsappNotifyOnConfirm   Boolean  @default(true)
+  whatsappProvider          String?  @default("callmebot")
+  whatsappApiKey            String?
+  calendarFeedToken         String?  @default(uuid())
+  googleCalendarEmail       String?
+  googleCalendarId          String?
+  googleServiceAccountEmail String?
+  googlePrivateKey          String?  @db.Text
+  googleCalendarConnected   Boolean  @default(false)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt @default(now())
+}
+
+model NotificationLog {
+  id        String   @id @default(uuid())
+  channel   String   // "WHATSAPP", "GOOGLE_CALENDAR"
+  recipient String
+  eventType String   // "BOOKING_CREATED", "BOOKING_CONFIRMED", "TEST"
+  message   String   @db.Text
+  status    String   // "SENT", "SIMULATED", "FAILED"
+  metadata  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([channel, createdAt])
+}
+
+model ServicePackage {
+  id              String    @id @default(uuid())
+  name            String
+  description     String
+  price           Decimal   @db.Decimal(10, 2)
+  durationMinutes Int       // e.g., 60, 120, 180
+  bufferMinutes   Int       @default(30) // Interval after shoot for setup/transit
+  isActive        Boolean   @default(true)
+  bookings        Booking[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model OperatingHours {
+  id        String  @id @default(uuid())
+  dayOfWeek Int     @unique // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  openTime  String  // Format: "HH:mm" e.g. "09:00"
+  closeTime String  // Format: "HH:mm" e.g. "18:00"
+  isClosed  Boolean @default(false)
+}
+
+model BlackoutDate {
+  id        String   @id @default(uuid())
+  startTime DateTime
+  endTime   DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([startTime, endTime])
+}
+
+model Booking {
+  id              String         @id @default(uuid())
+  manageToken     String         @unique @default(uuid())
+  clientName      String
+  clientEmail     String
+  clientPhone     String
+  notes           String?
+  serviceId       String
+  service         ServicePackage @relation(fields: [serviceId], references: [id])
+  startTime       DateTime       // Stored in UTC
+  endTime         DateTime       // startTime + durationMinutes
+  bufferEndTime   DateTime       // endTime + bufferMinutes (used for collision checks)
+  totalAmount     Decimal        @db.Decimal(10, 2)
+  status          BookingStatus  @default(PENDING_PAYMENT)
+  expiresAt       DateTime?      // Set to +15 mins during PENDING_PAYMENT
+  paymentRef      String?        @unique
+  calendarEventId String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([startTime, bufferEndTime, status])
+  @@index([manageToken])
+}
