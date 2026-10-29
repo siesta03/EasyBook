@@ -14,22 +14,12 @@ EasyBook uses:
 
 ---
 
-## 2. Why GitHub Actions Showed the `DATABASE_URL` Error (Even Though Vercel Had It Set)
+## 2. Why Vercel Manages Deployment (and Why `deploy.yml` Was Removed)
 
- **Vercel** and **GitHub Actions** have **two completely separate secret stores**:
-
-1. **Vercel Environment Variables** (`Vercel Dashboard -> Project Settings -> Environment Variables`):
-   - Used when **Vercel** builds and runs your app (`npm run vercel-build`, which runs `prisma db push && next build`).
-   - You already configured `DATABASE_URL`, `JWT_SECRET`, `TIMEZONE`, and `NEXT_PUBLIC_APP_URL` here.
-2. **GitHub Actions Secrets** (`GitHub Repository -> Settings -> Secrets and variables -> Actions`):
-   - Used by `.github/workflows/deploy.yml` when GitHub runs its own workflow on push to `main`.
-   - GitHub Actions **cannot automatically read** Vercel's Environment Variables.
-   - Previously, `.github/workflows/deploy.yml` unconditionally ran `npx prisma migrate deploy` even when GitHub's `secrets.DATABASE_URL` was empty, causing `Error code: P1012: The environment variable 'DATABASE_URL' resolved to an empty string`.
-
-### How This Is Fixed
-- `.github/workflows/deploy.yml` now checks `if: env.DATABASE_URL != ''` before running `npx prisma db push`.
-- If `DATABASE_URL` is only configured in **Vercel** (and not duplicated in GitHub Secrets), GitHub Actions cleanly succeeds and lets **Vercel's `vercel-build` script** handle `prisma db push && next build` using your Vercel Environment Variables.
-- *(Optional)* If you also want GitHub Actions to run `prisma db push`, you can add `DATABASE_URL` under **GitHub Repo -> Settings -> Secrets and variables -> Actions -> New repository secret**.
+- **Vercel native git integration**: Vercel is connected directly to your GitHub repository `siesta03/EasyBook`. Whenever you push to `main`, Vercel immediately triggers a build using `npm run vercel-build` (`prisma db push && next build`).
+- **Where Environment Variables Live**: Your production secrets (`DATABASE_URL`, `JWT_SECRET`, `TIMEZONE`, `NEXT_PUBLIC_APP_URL`) are stored in **Vercel Dashboard -> Project Settings -> Environment Variables**.
+- **Why `deploy.yml` caused errors**: `.github/workflows/deploy.yml` was a redundant GitHub Actions workflow attempting to run database migrations on GitHub's own runner. Because GitHub Actions has a separate secrets store from Vercel, VS Code flagged missing secrets (`Context access might be invalid`), and GitHub Actions failed on pushes.
+- **Resolution**: `.github/workflows/deploy.yml` has been removed. All deployments and schema syncs are executed cleanly and automatically by **Vercel** with zero warnings or errors.
 
 ---
 
@@ -60,3 +50,4 @@ To manually re-sync or seed from your local machine at any time:
 npx prisma db push
 ```
 Or click **"Load Default Category Packages"** inside **Admin -> Services & Buffers (`/admin/services`)**.
+
