@@ -190,7 +190,59 @@ export default function AdminProfilePage() {
   };
 
   useEffect(() => {
-    loadProfile();
+    let ignore = false;
+    async function initProfile() {
+      try {
+        const res = await fetch("/api/admin/profile");
+        if (!res.ok) throw new Error("Failed to load profile data");
+        const data = await res.json();
+        if (ignore) return;
+
+        const p: AdminProfile = data.admin;
+        setName(p.name || "");
+        setEmail(p.email || "");
+        setPhone(p.phone || "");
+        setWhatsappNumber(p.whatsappNumber || "");
+        setWhatsappEnabled(p.whatsappEnabled);
+        setWhatsappNotifyOnCheckout(p.whatsappNotifyOnCheckout);
+        setWhatsappNotifyOnConfirm(p.whatsappNotifyOnConfirm);
+        setWhatsappNotifyCustomer(p.whatsappNotifyCustomer ?? true);
+        setWhatsappProvider(p.whatsappProvider || "callmebot");
+        setWhatsappApiKey(p.whatsappApiKey || "");
+        setCalendarFeedUrl(p.calendarFeedUrl || "");
+        setGoogleCalendarEmail(p.googleCalendarEmail || "");
+        setGoogleCalendarId(p.googleCalendarId || "");
+        setGoogleServiceAccountEmail(p.googleServiceAccountEmail || "");
+        setGoogleCalendarConnected(p.googleCalendarConnected);
+
+        setEnvDefaults(data.systemEnvDefaults || null);
+        setLogs(data.recentLogs || []);
+
+        try {
+          const bRes = await fetch("/api/admin/bookings");
+          if (bRes.ok) {
+            const bData = await bRes.json();
+            if (!ignore) setRecentBookings(bData.slice(0, 5));
+          }
+        } catch (bErr) {
+          console.error("Failed to load bookings for calendar tab:", bErr);
+        }
+      } catch (err: unknown) {
+        console.error(err);
+        if (!ignore) {
+          setFeedback({
+            type: "error",
+            message: err instanceof Error ? err.message : "Error loading profile",
+          });
+        }
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+    initProfile();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   // Save Profile handler

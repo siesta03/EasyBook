@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import Link from "next/link";
 import {
   format,
@@ -20,7 +20,6 @@ import {
   addDays,
   subDays,
   getHours,
-  getMinutes,
   differenceInMinutes,
 } from "date-fns";
 import {
@@ -31,9 +30,7 @@ import {
   User,
   Mail,
   Phone,
-  Camera,
   CheckCircle2,
-  XCircle,
   AlertCircle,
   ExternalLink,
   MessageSquare,
@@ -46,8 +43,6 @@ import {
   Layers,
   Sliders,
   FileText,
-  Sparkles,
-  ShieldAlert,
 } from "lucide-react";
 import {
   PHOTOSHOOT_CATEGORIES,
@@ -105,7 +100,7 @@ const CATEGORY_EVENT_STYLES: Record<string, string> = {
     "bg-cyan-600/25 border-l-4 border-cyan-400 text-cyan-100 hover:bg-cyan-600/40",
 };
 
-export default function AdminCalendarPage() {
+function AdminCalendarView() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [blackouts, setBlackouts] = useState<BlackoutDate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -160,8 +155,31 @@ export default function AdminCalendarPage() {
   };
 
   useEffect(() => {
-    loadCalendarData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let ignore = false;
+    async function initCalendar() {
+      try {
+        const [bookingsRes, availRes] = await Promise.all([
+          fetch("/api/admin/bookings"),
+          fetch("/api/admin/availability"),
+        ]);
+        if (bookingsRes.ok) {
+          const bData: Booking[] = await bookingsRes.json();
+          if (!ignore) setBookings(bData);
+        }
+        if (availRes.ok) {
+          const aData = await availRes.json();
+          if (!ignore) setBlackouts(aData.blackoutDates || []);
+        }
+      } catch (err) {
+        console.error("Failed to load calendar data:", err);
+      } finally {
+        if (!ignore) setIsLoading(false);
+      }
+    }
+    initCalendar();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   // Filtered bookings
@@ -1365,4 +1383,20 @@ export default function AdminCalendarPage() {
     </div>
   );
 }
+
+export default function AdminCalendarPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center py-28 text-slate-400 gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+          <p className="text-sm">Loading studio calendar...</p>
+        </div>
+      }
+    >
+      <AdminCalendarView />
+    </Suspense>
+  );
+}
+
 

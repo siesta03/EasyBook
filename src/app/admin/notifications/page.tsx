@@ -142,8 +142,40 @@ export default function AdminNotificationsPage() {
   };
 
   useEffect(() => {
-    loadNotifications();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let ignore = false;
+    async function fetchFilteredNotifications() {
+      try {
+        const params = new URLSearchParams();
+        if (roleFilter !== "ALL") params.set("recipientRole", roleFilter);
+        if (channelFilter !== "ALL") params.set("channel", channelFilter);
+        if (eventFilter !== "ALL") params.set("eventType", eventFilter);
+        if (searchQuery.trim()) params.set("q", searchQuery.trim());
+
+        const res = await fetch(`/api/admin/notifications?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!ignore) {
+            setNotifications(data.notifications || []);
+            if (data.stats) setStats(data.stats);
+            if (data.whatsappConfig) setWhatsappConfig(data.whatsappConfig);
+            if (data.recentBookings) {
+              setRecentBookings(data.recentBookings);
+              if (data.recentBookings.length > 0) {
+                setSelectedBookingId((prev) => prev || data.recentBookings[0].id);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load notifications:", err);
+      } finally {
+        if (!ignore) setIsLoading(false);
+      }
+    }
+    fetchFilteredNotifications();
+    return () => {
+      ignore = true;
+    };
   }, [roleFilter, channelFilter, eventFilter, searchQuery]);
 
   const handleMarkRead = async (id: string) => {
