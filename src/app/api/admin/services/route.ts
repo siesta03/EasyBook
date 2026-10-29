@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { ensureCategoryPackagesSeeded } from "@/lib/seed-categories";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    await ensureCategoryPackagesSeeded();
+
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get("category");
+
     const services = await prisma.servicePackage.findMany({
-      orderBy: { createdAt: "desc" },
+      where: category && category !== "ALL" ? { category } : undefined,
+      orderBy: [{ category: "asc" }, { price: "asc" }],
     });
     return NextResponse.json(services);
   } catch (error) {
@@ -19,6 +26,7 @@ export async function GET() {
 
 const createServiceSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  category: z.string().min(1, "Category is required").default("Indoor Photoshoot"),
   description: z.string().min(1, "Description is required"),
   price: z.coerce.number().positive("Price must be positive"),
   durationMinutes: z.coerce.number().int().positive("Duration must be a positive integer"),
@@ -29,6 +37,19 @@ const createServiceSchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+
+    if (body && body.action === "seed_defaults") {
+      await ensureCategoryPackagesSeeded(true);
+      const services = await prisma.servicePackage.findMany({
+        orderBy: [{ category: "asc" }, { price: "asc" }],
+      });
+      return NextResponse.json({
+        success: true,
+        message: "Default category packages seeded successfully",
+        services,
+      });
+    }
+
     const parsed = createServiceSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -58,6 +79,7 @@ export async function POST(request: Request) {
 const updateServiceSchema = z.object({
   id: z.string().min(1, "id is required"),
   name: z.string().min(1).optional(),
+  category: z.string().min(1).optional(),
   description: z.string().min(1).optional(),
   price: z.coerce.number().positive().optional(),
   durationMinutes: z.coerce.number().int().positive().optional(),

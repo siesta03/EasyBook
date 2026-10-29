@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
+  Calendar,
   CalendarDays,
   Sliders,
   Clock,
+  Bell,
   LogOut,
   Camera,
   Menu,
@@ -26,6 +28,29 @@ export default function AdminLayout({
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  useEffect(() => {
+    if (pathname === "/admin/login") return;
+    let ignore = false;
+    async function fetchUnreadCount() {
+      try {
+        const res = await fetch("/api/admin/notifications");
+        if (res.ok) {
+          const data = await res.json();
+          if (!ignore && data.stats) {
+            setUnreadNotifications(data.stats.unreadCount || 0);
+          }
+        }
+      } catch {
+        // non-blocking
+      }
+    }
+    fetchUnreadCount();
+    return () => {
+      ignore = true;
+    };
+  }, [pathname]);
 
   // If on login page, render clean layout without sidebar
   if (pathname === "/admin/login") {
@@ -39,6 +64,11 @@ export default function AdminLayout({
       icon: LayoutDashboard,
     },
     {
+      label: "Calendar View",
+      href: "/admin/calendar",
+      icon: Calendar,
+    },
+    {
       label: "Bookings",
       href: "/admin/bookings",
       icon: CalendarDays,
@@ -47,6 +77,12 @@ export default function AdminLayout({
       label: "Services & Buffers",
       href: "/admin/services",
       icon: Sliders,
+    },
+    {
+      label: "Notifications",
+      href: "/admin/notifications",
+      icon: Bell,
+      badge: unreadNotifications,
     },
     {
       label: "Operating Hours & Blackouts",
@@ -127,18 +163,25 @@ export default function AdminLayout({
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                     isActive
                       ? "bg-gradient-to-r from-indigo-500/20 to-pink-500/10 text-white border border-indigo-500/30 shadow-md shadow-indigo-500/10"
                       : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
                   }`}
                 >
-                  <Icon
-                    className={`w-4 h-4 ${
-                      isActive ? "text-indigo-400" : "text-slate-500"
-                    }`}
-                  />
-                  <span>{item.label}</span>
+                  <span className="flex items-center gap-3">
+                    <Icon
+                      className={`w-4 h-4 ${
+                        isActive ? "text-indigo-400" : "text-slate-500"
+                      }`}
+                    />
+                    <span>{item.label}</span>
+                  </span>
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-500 text-white">
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}

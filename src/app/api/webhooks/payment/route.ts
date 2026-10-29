@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyWebhookSignature } from "@/lib/payment";
 import { createCalendarEvent } from "@/lib/google-calendar";
-import { sendAdminWhatsAppNotification } from "@/lib/whatsapp";
+import { sendBookingWhatsAppNotifications } from "@/lib/whatsapp";
 
 export async function POST(request: Request) {
   try {
@@ -77,8 +77,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Send WhatsApp notification for confirmed booking
-    sendAdminWhatsAppNotification({
+    // Send WhatsApp notification for confirmed booking to both Admin and Customer
+    await sendBookingWhatsAppNotifications({
       eventType: "BOOKING_CONFIRMED",
       booking: confirmedBooking,
       service: confirmedBooking.service,

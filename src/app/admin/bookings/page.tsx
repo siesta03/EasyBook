@@ -17,12 +17,19 @@ import {
   Mail,
   MessageSquare,
 } from "lucide-react";
+import {
+  PHOTOSHOOT_CATEGORIES,
+  formatMYR,
+  getCategoryBadgeClass,
+} from "@/lib/categories";
 
 interface ServicePackage {
   id: string;
   name: string;
+  category?: string;
   price: string | number;
   durationMinutes: number;
+  bufferMinutes?: number;
 }
 
 interface Booking {
@@ -47,6 +54,7 @@ export default function AdminBookingsPage() {
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
 
   // Reschedule Modal
   const [rescheduleBooking, setRescheduleBooking] = useState<Booking | null>(null);
@@ -213,6 +221,20 @@ export default function AdminBookingsPage() {
           />
         </div>
 
+        {/* Category Filter */}
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="bg-[#121521] border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500 w-full md:w-auto"
+        >
+          <option value="ALL">All Categories</option>
+          {PHOTOSHOOT_CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
+
         {/* Status Filter Buttons */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
           {["ALL", "CONFIRMED", "PENDING_PAYMENT", "CANCELLED"].map((st) => (
@@ -261,7 +283,14 @@ export default function AdminBookingsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {bookings.map((b) => (
+                {bookings
+                  .filter(
+                    (b) =>
+                      categoryFilter === "ALL" ||
+                      (b.service.category || "Indoor Photoshoot") ===
+                        categoryFilter
+                  )
+                  .map((b) => (
                   <tr key={b.id} className="hover:bg-white/[0.02] transition-colors">
                     {/* Client */}
                     <td className="py-4 px-4">
@@ -278,11 +307,18 @@ export default function AdminBookingsPage() {
 
                     {/* Package */}
                     <td className="py-4 px-4">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border mb-1 ${getCategoryBadgeClass(
+                          b.service.category
+                        )}`}
+                      >
+                        {b.service.category || "Indoor Photoshoot"}
+                      </span>
                       <span className="font-bold text-indigo-300 block text-xs">
                         {b.service.name}
                       </span>
                       <span className="text-slate-500 text-[11px]">
-                        {b.service.durationMinutes} min photoshoot
+                        {b.service.durationMinutes}m shoot + {b.service.bufferMinutes ?? 30}m buffer
                       </span>
                       {b.notes && (
                         <p className="text-slate-400 italic text-[11px] mt-1 max-w-xs truncate">
@@ -304,7 +340,7 @@ export default function AdminBookingsPage() {
 
                     {/* Amount */}
                     <td className="py-4 px-4 font-bold text-white text-sm">
-                      ${Number(b.totalAmount).toFixed(2)}
+                      {formatMYR(b.totalAmount)}
                     </td>
 
                     {/* Status */}
@@ -381,7 +417,7 @@ export default function AdminBookingsPage() {
 
                         {/* 1-Click WhatsApp Client Message */}
                         <a
-                          href={`https://wa.me/${b.clientPhone.replace(/[^\d]/g, "")}?text=${encodeURIComponent(`Hi ${b.clientName}, this is regarding your EasyBook photoshoot booking for ${b.service.name}!`)}`}
+                          href={`https://wa.me/${b.clientPhone.replace(/[^\d]/g, "").replace(/^0/, "60")}?text=${encodeURIComponent(`Hi ${b.clientName}, this is regarding your EasyBook [${b.service.category || "Photoshoot"}] booking for ${b.service.name} (${formatMYR(b.totalAmount)})!`)}`}
                           target="_blank"
                           rel="noreferrer"
                           title="Message Client on WhatsApp"

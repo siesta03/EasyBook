@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { signAdminToken, COOKIE_NAME } from "@/lib/auth";
+import { ensureCategoryPackagesSeeded } from "@/lib/seed-categories";
 
 const loginSchema = z.object({
   email: z.string().email("Valid email is required"),
@@ -54,41 +55,10 @@ export async function POST(request: Request) {
         });
       }
 
-      // Auto-seed default Service Packages
-      const packageCount = await prisma.servicePackage.count();
-      if (packageCount === 0) {
-        await prisma.servicePackage.createMany({
-          data: [
-            {
-              name: "Portrait & Headshots",
-              description:
-                "Professional studio lighting, 2 backdrop changes, and 5 retouched high-resolution images.",
-              price: 150.0,
-              durationMinutes: 60,
-              bufferMinutes: 30,
-              isActive: true,
-            },
-            {
-              name: "Studio Brand Collection",
-              description:
-                "Comprehensive business branding shoot with multiple outfit changes and 15 premium edited photos.",
-              price: 350.0,
-              durationMinutes: 120,
-              bufferMinutes: 30,
-              isActive: true,
-            },
-            {
-              name: "Full Editorial & Fashion",
-              description:
-                "Creative director assisted fashion photoshoot with luxury lighting setups and 25 retouched photos.",
-              price: 600.0,
-              durationMinutes: 180,
-              bufferMinutes: 45,
-              isActive: true,
-            },
-          ],
-        });
-      }
+      // Auto-seed default Operating Hours and Service Packages across all 5 categories
+      await ensureCategoryPackagesSeeded();
+    } else {
+      await ensureCategoryPackagesSeeded();
     }
 
     const admin = await prisma.adminUser.findUnique({

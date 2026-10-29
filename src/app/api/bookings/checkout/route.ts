@@ -3,7 +3,7 @@ import { z } from "zod";
 import { addMinutes } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { createCheckoutSession } from "@/lib/payment";
-import { sendAdminWhatsAppNotification } from "@/lib/whatsapp";
+import { sendBookingWhatsAppNotifications } from "@/lib/whatsapp";
 
 const checkoutSchema = z.object({
   serviceId: z.string().min(1, "Service ID is required"),
@@ -118,19 +118,21 @@ export async function POST(request: Request) {
       data: { paymentRef },
     });
 
-    // Notify admin via WhatsApp that customer has added a new booking
-    sendAdminWhatsAppNotification({
+    // Notify BOTH Admin and Customer via WhatsApp that a new booking has been created
+    const whatsappNotifications = await sendBookingWhatsAppNotifications({
       eventType: "BOOKING_CREATED",
       booking,
       service: booking.service,
-    }).catch((err) =>
-      console.error("[Checkout] WhatsApp notification dispatch failed:", err)
-    );
+    }).catch((err) => {
+      console.error("[Checkout] WhatsApp notification dispatch failed:", err);
+      return null;
+    });
 
     return NextResponse.json({
       checkoutUrl,
       bookingId: booking.id,
       manageToken: booking.manageToken,
+      whatsappNotifications,
     });
   } catch (error: unknown) {
     if (error instanceof SlotCollisionError) {

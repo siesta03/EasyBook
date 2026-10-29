@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { deleteCalendarEvent } from "@/lib/google-calendar";
+import { sendBookingWhatsAppNotifications } from "@/lib/whatsapp";
 
 export async function GET(
   _request: Request,
@@ -99,6 +100,15 @@ export async function PATCH(
         console.error("[Booking Cancel] Failed to remove calendar event:", calError);
       }
     }
+
+    // Dispatch WhatsApp cancellation notifications to Customer and Admin
+    await sendBookingWhatsAppNotifications({
+      eventType: "BOOKING_CANCELLED",
+      booking: updated,
+      service: updated.service,
+    }).catch((waErr) =>
+      console.error("[Booking Cancel] WhatsApp notification error:", waErr)
+    );
 
     return NextResponse.json({
       message: "Booking successfully cancelled",

@@ -50,6 +50,7 @@ async function formatAdminResponse(admin: {
   whatsappEnabled: boolean;
   whatsappNotifyOnCheckout: boolean;
   whatsappNotifyOnConfirm: boolean;
+  whatsappNotifyCustomer?: boolean;
   whatsappProvider: string | null;
   whatsappApiKey: string | null;
   calendarFeedToken: string | null;
@@ -79,6 +80,7 @@ async function formatAdminResponse(admin: {
       whatsappEnabled: admin.whatsappEnabled,
       whatsappNotifyOnCheckout: admin.whatsappNotifyOnCheckout,
       whatsappNotifyOnConfirm: admin.whatsappNotifyOnConfirm,
+      whatsappNotifyCustomer: admin.whatsappNotifyCustomer ?? true,
       whatsappProvider: admin.whatsappProvider || "callmebot",
       whatsappApiKey: admin.whatsappApiKey || "",
       calendarFeedToken: admin.calendarFeedToken || "",
@@ -109,6 +111,7 @@ const updateProfileSchema = z.object({
   whatsappEnabled: z.boolean().optional(),
   whatsappNotifyOnCheckout: z.boolean().optional(),
   whatsappNotifyOnConfirm: z.boolean().optional(),
+  whatsappNotifyCustomer: z.boolean().optional(),
   whatsappProvider: z.string().optional(),
   whatsappApiKey: z.string().optional().nullable(),
   googleCalendarEmail: z.string().optional().nullable(),
@@ -154,6 +157,7 @@ export async function PATCH(request: Request) {
       whatsappEnabled,
       whatsappNotifyOnCheckout,
       whatsappNotifyOnConfirm,
+      whatsappNotifyCustomer,
       whatsappProvider,
       whatsappApiKey,
       googleCalendarEmail,
@@ -191,6 +195,9 @@ export async function PATCH(request: Request) {
     }
     if (whatsappNotifyOnConfirm !== undefined) {
       updateData.whatsappNotifyOnConfirm = whatsappNotifyOnConfirm;
+    }
+    if (whatsappNotifyCustomer !== undefined) {
+      updateData.whatsappNotifyCustomer = whatsappNotifyCustomer;
     }
     if (whatsappProvider !== undefined) {
       updateData.whatsappProvider = whatsappProvider;

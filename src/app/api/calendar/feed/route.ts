@@ -39,12 +39,15 @@ export async function GET(request: Request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     const events = bookings.map((b) => {
-      const summary = `Photoshoot: ${b.clientName} - ${b.service.name}`;
+      const categoryLabel = b.service.category || "Indoor Photoshoot";
+      const summary = `[${categoryLabel}] ${b.clientName} - ${b.service.name}`;
       const description = [
         `Client Name: ${b.clientName}`,
         `Client Phone: ${b.clientPhone}`,
         `Client Email: ${b.clientEmail}`,
-        `Service Package: ${b.service.name} (${b.service.durationMinutes} mins)`,
+        `Category: ${categoryLabel}`,
+        `Service Package: ${b.service.name} (${b.service.durationMinutes} mins + ${b.service.bufferMinutes} mins buffer)`,
+        `Total Amount: RM ${Number(b.totalAmount).toFixed(2)}`,
         `Status: ${b.status}`,
         b.notes ? `Notes: ${b.notes}` : "",
         `Manage Booking: ${appUrl}/booking/manage/${b.manageToken}`,

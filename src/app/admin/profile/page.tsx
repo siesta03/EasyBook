@@ -40,6 +40,7 @@ interface AdminProfile {
   whatsappEnabled: boolean;
   whatsappNotifyOnCheckout: boolean;
   whatsappNotifyOnConfirm: boolean;
+  whatsappNotifyCustomer?: boolean;
   whatsappProvider: string;
   whatsappApiKey: string;
   calendarFeedToken: string;
@@ -102,6 +103,7 @@ export default function AdminProfilePage() {
   const [whatsappEnabled, setWhatsappEnabled] = useState(true);
   const [whatsappNotifyOnCheckout, setWhatsappNotifyOnCheckout] = useState(true);
   const [whatsappNotifyOnConfirm, setWhatsappNotifyOnConfirm] = useState(true);
+  const [whatsappNotifyCustomer, setWhatsappNotifyCustomer] = useState(true);
   const [whatsappProvider, setWhatsappProvider] = useState("callmebot");
   const [whatsappApiKey, setWhatsappApiKey] = useState("");
 
@@ -154,6 +156,7 @@ export default function AdminProfilePage() {
       setWhatsappEnabled(p.whatsappEnabled);
       setWhatsappNotifyOnCheckout(p.whatsappNotifyOnCheckout);
       setWhatsappNotifyOnConfirm(p.whatsappNotifyOnConfirm);
+      setWhatsappNotifyCustomer(p.whatsappNotifyCustomer ?? true);
       setWhatsappProvider(p.whatsappProvider || "callmebot");
       setWhatsappApiKey(p.whatsappApiKey || "");
       setCalendarFeedUrl(p.calendarFeedUrl || "");
@@ -233,6 +236,7 @@ export default function AdminProfilePage() {
         whatsappEnabled,
         whatsappNotifyOnCheckout,
         whatsappNotifyOnConfirm,
+        whatsappNotifyCustomer,
         whatsappProvider,
         whatsappApiKey,
         googleCalendarEmail,
@@ -757,16 +761,16 @@ export default function AdminProfilePage() {
               {/* Notification Toggles */}
               <div className="border-t border-white/5 pt-4 space-y-3">
                 <span className="text-xs font-bold text-slate-300 block">
-                  Notification Triggers
+                  Notification Triggers (Admin &amp; Customer)
                 </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
                     <div>
                       <span className="text-xs font-semibold text-white block">
-                        When Customer Adds a Booking (Hold)
+                        Admin: On Booking Hold
                       </span>
                       <span className="text-[11px] text-slate-400">
-                        Dispatched as soon as customer chooses a slot and proceeds.
+                        Notify Admin when customer locks a slot.
                       </span>
                     </div>
                     <input
@@ -780,16 +784,33 @@ export default function AdminProfilePage() {
                   <div className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
                     <div>
                       <span className="text-xs font-semibold text-white block">
-                        When Payment is Confirmed
+                        Admin: On Payment Confirmed
                       </span>
                       <span className="text-[11px] text-slate-400">
-                        Dispatched once checkout payment webhook succeeds.
+                        Notify Admin once payment succeeds.
                       </span>
                     </div>
                     <input
                       type="checkbox"
                       checked={whatsappNotifyOnConfirm}
                       onChange={(e) => setWhatsappNotifyOnConfirm(e.target.checked)}
+                      className="w-4 h-4 text-emerald-600 rounded bg-slate-800 border-white/10"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
+                    <div>
+                      <span className="text-xs font-semibold text-white block">
+                        Customer: Booking Receipt
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        Notify Customer on WhatsApp when booking/confirmed.
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={whatsappNotifyCustomer}
+                      onChange={(e) => setWhatsappNotifyCustomer(e.target.checked)}
                       className="w-4 h-4 text-emerald-600 rounded bg-slate-800 border-white/10"
                     />
                   </div>
@@ -807,18 +828,19 @@ export default function AdminProfilePage() {
                     <span className="font-bold text-emerald-400">📸 EasyBook Alert Bot</span>
                     <span className="text-[10px] text-slate-500">Just now</span>
                   </div>
-                  <p className="font-bold text-emerald-300">📸 *NEW BOOKING ADDED!* ⚡</p>
+                  <p className="font-bold text-emerald-300">📸 *NEW BOOKING RECEIVED!* ⚡</p>
                   <p className="text-[11px] text-slate-400">━━━━━━━━━━━━━━━━━━</p>
                   <p>👤 *Client:* Azfar</p>
                   <p>📞 *Phone:* +60189779241</p>
                   <p>✉️ *Email:* azfar@example.com</p>
-                  <p className="pt-1">📦 *Package:* Full Editorial &amp; Fashion (180m)</p>
+                  <p className="pt-1">🏷️ *Category:* Indoor Photoshoot</p>
+                  <p>📦 *Package:* Full Studio Editorial &amp; Fashion (150m + 30m buffer)</p>
                   <p>📅 *Date:* Saturday, Oct 24, 2026</p>
-                  <p>⏰ *Time:* 02:00 PM</p>
-                  <p>💵 *Amount:* $600.00</p>
+                  <p>⏰ *Time:* 02:00 PM - 04:30 PM</p>
+                  <p>💵 *Amount:* RM 580.00</p>
                   <p className="text-[11px] text-slate-400">━━━━━━━━━━━━━━━━━━</p>
                   <p className="text-amber-400">⏳ *Status:* Pending Payment (15-min hold)</p>
-                  <p className="text-indigo-400 underline">🔗 View in Admin Console</p>
+                  <p className="text-indigo-400 underline">🔗 View in Admin Calendar</p>
                 </div>
               </div>
             </div>

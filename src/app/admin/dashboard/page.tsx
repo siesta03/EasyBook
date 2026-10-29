@@ -7,20 +7,24 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock,
-  DollarSign,
+  Banknote,
   Users,
   Camera,
   ArrowRight,
   ExternalLink,
   RefreshCw,
   Loader2,
+  Bell,
 } from "lucide-react";
+import { formatMYR, getCategoryBadgeClass } from "@/lib/categories";
 
 interface ServicePackage {
   id: string;
   name: string;
+  category?: string;
   price: string | number;
   durationMinutes: number;
+  bufferMinutes?: number;
 }
 
 interface Booking {
@@ -126,15 +130,31 @@ function AdminDashboardContent() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/5 text-slate-300 hover:text-white text-xs font-semibold transition-all self-start sm:self-center cursor-pointer disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-          Refresh Live Data
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-center">
+          <Link
+            href="/admin/calendar"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 hover:text-white text-xs font-semibold transition-all"
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            Open Calendar View
+          </Link>
+          <Link
+            href="/admin/notifications"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-300 hover:text-white text-xs font-semibold transition-all"
+          >
+            <Bell className="w-3.5 h-3.5" />
+            Notifications
+          </Link>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/5 text-slate-300 hover:text-white text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            Refresh Live Data
+          </button>
+        </div>
       </div>
 
       {/* 4 Metric Cards */}
@@ -171,16 +191,16 @@ function AdminDashboardContent() {
         <div className="glass-card p-5 rounded-2xl border border-white/10 relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Confirmed Revenue
+              Confirmed Revenue (MYR)
             </span>
             <div className="w-8 h-8 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center">
-              <DollarSign className="w-4 h-4" />
+              <Banknote className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-indigo-400">
-            ${totalRevenue.toFixed(2)}
+          <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-indigo-400">
+            {formatMYR(totalRevenue)}
           </div>
-          <p className="text-[11px] text-slate-500 mt-1">Processed photoshoot sales</p>
+          <p className="text-[11px] text-slate-500 mt-1">Processed photoshoot sales in RM</p>
         </div>
 
         {/* Pending Holds */}
@@ -250,11 +270,18 @@ function AdminDashboardContent() {
                       <span className="text-slate-500 text-[11px]">{b.clientEmail}</span>
                     </td>
                     <td className="py-3.5 px-3">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border mb-1 ${getCategoryBadgeClass(
+                          b.service.category
+                        )}`}
+                      >
+                        {b.service.category || "Indoor Photoshoot"}
+                      </span>
                       <span className="font-semibold text-indigo-300 block">
                         {b.service.name}
                       </span>
                       <span className="text-slate-500 text-[11px]">
-                        {b.service.durationMinutes} mins
+                        {b.service.durationMinutes} mins + {b.service.bufferMinutes ?? 30}m buffer
                       </span>
                     </td>
                     <td className="py-3.5 px-3">
@@ -267,7 +294,7 @@ function AdminDashboardContent() {
                       </span>
                     </td>
                     <td className="py-3.5 px-3 font-semibold text-white">
-                      ${Number(b.totalAmount).toFixed(2)}
+                      {formatMYR(b.totalAmount)}
                     </td>
                     <td className="py-3.5 px-3">
                       {b.status === "CONFIRMED" ? (

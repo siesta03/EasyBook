@@ -24,6 +24,7 @@ model AdminUser {
   whatsappEnabled           Boolean  @default(true)
   whatsappNotifyOnCheckout  Boolean  @default(true)
   whatsappNotifyOnConfirm   Boolean  @default(true)
+  whatsappNotifyCustomer    Boolean  @default(true)
   whatsappProvider          String?  @default("callmebot")
   whatsappApiKey            String?
   calendarFeedToken         String?  @default(uuid())
@@ -37,21 +38,25 @@ model AdminUser {
 }
 
 model NotificationLog {
-  id        String   @id @default(uuid())
-  channel   String   // "WHATSAPP", "GOOGLE_CALENDAR"
-  recipient String
-  eventType String   // "BOOKING_CREATED", "BOOKING_CONFIRMED", "TEST"
-  message   String   @db.Text
-  status    String   // "SENT", "SIMULATED", "FAILED"
-  metadata  String?  @db.Text
-  createdAt DateTime @default(now())
+  id            String   @id @default(uuid())
+  channel       String   // "WHATSAPP", "GOOGLE_CALENDAR"
+  recipient     String
+  recipientRole String   @default("ADMIN") // "ADMIN", "CUSTOMER"
+  eventType     String   // "BOOKING_CREATED", "BOOKING_CONFIRMED", "BOOKING_CANCELLED", "BOOKING_RESCHEDULED", "TEST"
+  message       String   @db.Text
+  status        String   // "SENT", "SIMULATED", "FAILED"
+  isRead        Boolean  @default(false)
+  metadata      String?  @db.Text
+  createdAt     DateTime @default(now())
 
   @@index([channel, createdAt])
+  @@index([isRead, createdAt])
 }
 
 model ServicePackage {
   id              String    @id @default(uuid())
   name            String
+  category        String    @default("Indoor Photoshoot")
   description     String
   price           Decimal   @db.Decimal(10, 2)
   durationMinutes Int       // e.g., 60, 120, 180
@@ -60,6 +65,8 @@ model ServicePackage {
   bookings        Booking[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  @@index([category, isActive])
 }
 
 model OperatingHours {

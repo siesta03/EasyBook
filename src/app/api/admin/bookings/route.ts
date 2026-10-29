@@ -3,6 +3,7 @@ import { addMinutes } from "date-fns";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createCalendarEvent, deleteCalendarEvent } from "@/lib/google-calendar";
+import { sendBookingWhatsAppNotifications } from "@/lib/whatsapp";
 import { BookingStatus } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -197,6 +198,28 @@ export async function PATCH(request: Request) {
       } catch (calErr) {
         console.error("[Admin Bookings] Failed to update calendar event:", calErr);
       }
+    }
+
+    // 4. WhatsApp notification to both Customer and Admin on status change or reschedule
+    try {
+      const eventType =
+        status === "CONFIRMED"
+          ? "BOOKING_CONFIRMED"
+          : status === "CANCELLED"
+          ? "BOOKING_CANCELLED"
+          : startTime
+          ? "BOOKING_RESCHEDULED"
+          : null;
+
+      if (eventType) {
+        await sendBookingWhatsAppNotifications({
+          eventType,
+          booking: updatedBooking,
+          service: updatedBooking.service,
+        });
+      }
+    } catch (waErr) {
+      console.error("[Admin Bookings] Failed to send WhatsApp notification:", waErr);
     }
 
     return NextResponse.json({

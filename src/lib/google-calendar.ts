@@ -201,7 +201,9 @@ export async function createCalendarEvent(
       `Client Name: ${booking.clientName}`,
       `Client Phone: ${booking.clientPhone}`,
       `Client Email: ${booking.clientEmail}`,
-      `Service Package: ${booking.service.name} (${booking.service.durationMinutes} mins)`,
+      `Category: ${booking.service.category || "Indoor Photoshoot"}`,
+      `Service Package: ${booking.service.name} (${booking.service.durationMinutes} mins + ${booking.service.bufferMinutes} mins buffer)`,
+      `Total Amount: RM ${Number(booking.totalAmount).toFixed(2)}`,
       booking.notes ? `Client Notes: ${booking.notes}` : "",
       "",
       `Manage or Reschedule: ${manageUrl}`,
@@ -213,7 +215,7 @@ export async function createCalendarEvent(
       calendarId,
       sendUpdates: "all",
       requestBody: {
-        summary: `Photoshoot: ${booking.clientName} - ${booking.service.name}`,
+        summary: `[${booking.service.category || "Photoshoot"}] ${booking.clientName} - ${booking.service.name}`,
         description,
         start: {
           dateTime: booking.startTime.toISOString(),

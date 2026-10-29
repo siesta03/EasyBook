@@ -18,12 +18,16 @@ import {
   Trash2,
   ShieldAlert,
   Sparkles,
+  MessageSquare,
+  CalendarPlus,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { formatMYR, getCategoryBadgeClass } from "@/lib/categories";
 
 interface ServicePackage {
   id: string;
   name: string;
+  category?: string;
   description: string;
   price: string | number;
   durationMinutes: number;
@@ -236,18 +240,29 @@ function ManageBookingContent({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Package Box */}
             <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
-              <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Camera className="w-4 h-4" />
-                Service Package
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Camera className="w-4 h-4" />
+                  Service Package
+                </span>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getCategoryBadgeClass(
+                    booking.service.category
+                  )}`}
+                >
+                  {booking.service.category || "Indoor Photoshoot"}
+                </span>
+              </div>
               <h3 className="text-lg font-bold text-white">{booking.service.name}</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
                 {booking.service.description}
               </p>
               <div className="pt-2 flex items-center justify-between text-xs border-t border-white/5 text-slate-400">
-                <span>Duration: {booking.service.durationMinutes} mins</span>
-                <span className="text-sm font-extrabold text-white">
-                  ${Number(booking.totalAmount).toFixed(2)}
+                <span>
+                  {booking.service.durationMinutes} mins shoot + {booking.service.bufferMinutes} mins buffer
+                </span>
+                <span className="text-base font-extrabold text-white">
+                  {formatMYR(booking.totalAmount)}
                 </span>
               </div>
             </div>
@@ -268,9 +283,57 @@ function ManageBookingContent({
                   {format(parseISO(booking.endTime), "hh:mm a")} (UTC Time Window)
                 </span>
               </div>
-              <div className="pt-2 text-xs text-slate-400 border-t border-white/5 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Google Calendar Invite synced</span>
+              <div className="pt-2 text-xs text-slate-400 border-t border-white/5 flex flex-wrap items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-emerald-400">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  WhatsApp &amp; Calendar Synced
+                </span>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://wa.me/${booking.clientPhone
+                      .replace(/[^\d]/g, "")
+                      .replace(/^0/, "60")}?text=${encodeURIComponent(
+                      `📸 *EasyBook Studio Receipt*\nClient: ${booking.clientName}\nCategory: ${
+                        booking.service.category || "Indoor Photoshoot"
+                      }\nPackage: ${booking.service.name}\nDate: ${format(
+                        parseISO(booking.startTime),
+                        "EEEE, dd MMM yyyy"
+                      )}\nTime: ${format(parseISO(booking.startTime), "hh:mm a")} - ${format(
+                        parseISO(booking.endTime),
+                        "hh:mm a"
+                      )}\nAmount: ${formatMYR(booking.totalAmount)}\nManage Link: ${
+                        typeof window !== "undefined" ? window.location.href : ""
+                      }`
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-semibold"
+                  >
+                    <MessageSquare className="w-3 h-3" />
+                    Send to WhatsApp
+                  </a>
+                  <a
+                    href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+                      `[${booking.service.category || "Photoshoot"}] ${booking.service.name}`
+                    )}&dates=${new Date(booking.startTime)
+                      .toISOString()
+                      .replace(/-|:|\.\d\d\d/g, "")}/${new Date(booking.endTime)
+                      .toISOString()
+                      .replace(/-|:|\.\d\d\d/g, "")}&details=${encodeURIComponent(
+                      `EasyBook Studio Session\nCategory: ${
+                        booking.service.category || "Indoor Photoshoot"
+                      }\nPackage: ${booking.service.name}\nTotal: ${formatMYR(
+                        booking.totalAmount
+                      )}`
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/30 font-semibold"
+                  >
+                    <CalendarPlus className="w-3 h-3" />
+                    Google Calendar
+                  </a>
+                </div>
               </div>
             </div>
           </div>
