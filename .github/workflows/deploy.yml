@@ -10,6 +10,11 @@ jobs:
     name: Database Migration & Production Deploy
     runs-on: ubuntu-latest
 
+    # Expose secrets at job level so they can be checked in step `if:` conditions
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,17 +28,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Prisma Database Migrations
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Warn if DATABASE_URL secret is missing
+        if: env.DATABASE_URL == ''
+        run: |
+          echo "::warning title=DATABASE_URL secret not set::Add DATABASE_URL in GitHub > Settings > Secrets and variables > Actions to sync the production database schema. Skipping schema sync."
+
+      # This project has no prisma/migrations folder; schema is synced with `db push`
+      # (same as the `vercel-build` script), so `migrate deploy` would never apply changes.
+      - name: Sync Prisma Database Schema
+        if: env.DATABASE_URL != ''
         run: |
           npx prisma generate
-          npx prisma migrate deploy
+          npx prisma db push --skip-generate
 
       - name: Trigger Production Deployment Webhook
         if: env.DEPLOY_WEBHOOK_URL != ''
-        env:
-          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
         run: |
           echo "Triggering deployment webhook..."
-          curl -X POST -fail "$DEPLOY_WEBHOOK_URL"
+          curl -X POST --fail "$DEPLOY_WEBHOOK_URL"

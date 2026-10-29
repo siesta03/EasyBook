@@ -70,7 +70,27 @@ export default function AdminServicesPage() {
   };
 
   useEffect(() => {
-    fetchServices();
+    let ignore = false;
+
+    async function loadServices() {
+      try {
+        const res = await fetch("/api/admin/services");
+        if (res.ok) {
+          const data = await res.json();
+          if (!ignore) setServices(data);
+        }
+      } catch (err) {
+        console.error("Failed to load services:", err);
+      } finally {
+        if (!ignore) setIsLoading(false);
+      }
+    }
+
+    loadServices();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const filteredServices = useMemo(() => {
