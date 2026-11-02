@@ -44,6 +44,10 @@ interface AdminProfile {
   whatsappNotifyCustomer?: boolean;
   whatsappProvider: string;
   whatsappApiKey: string;
+  telegramEnabled?: boolean;
+  hasTelegramBotToken?: boolean;
+  telegramChatId?: string;
+  emailNotifyCustomer?: boolean;
   calendarFeedToken: string;
   calendarFeedUrl: string;
   googleCalendarEmail: string;
@@ -60,6 +64,10 @@ interface SystemEnvDefaults {
   envGoogleServiceAccountEmail: string;
   hasEnvGooglePrivateKey: boolean;
   envGoogleCalendarId: string;
+  hasEnvTelegramBotToken?: boolean;
+  hasEnvTelegramChatId?: boolean;
+  emailConfigured?: boolean;
+  emailFrom?: string;
 }
 
 interface NotificationLog {
@@ -108,6 +116,18 @@ export default function AdminProfilePage() {
   const [whatsappProvider, setWhatsappProvider] = useState("callmebot");
   const [whatsappApiKey, setWhatsappApiKey] = useState("");
 
+  // Telegram (Admin alerts) & Email (Customer receipts) State
+  const [telegramEnabled, setTelegramEnabled] = useState(false);
+  const [telegramBotToken, setTelegramBotToken] = useState("");
+  const [hasTelegramBotToken, setHasTelegramBotToken] = useState(false);
+  const [telegramChatId, setTelegramChatId] = useState("");
+  const [telegramBotUsername, setTelegramBotUsername] = useState("");
+  const [emailNotifyCustomer, setEmailNotifyCustomer] = useState(true);
+  const [detectingChatId, setDetectingChatId] = useState(false);
+  const [testingTelegram, setTestingTelegram] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [testEmailTo, setTestEmailTo] = useState("");
+
   // Google Calendar State
   const [googleCalendarEmail, setGoogleCalendarEmail] = useState("");
   const [googleCalendarId, setGoogleCalendarId] = useState("");
@@ -120,7 +140,7 @@ export default function AdminProfilePage() {
   // System & Logs
   const [envDefaults, setEnvDefaults] = useState<SystemEnvDefaults | null>(null);
   const [logs, setLogs] = useState<NotificationLog[]>([]);
-  const [activeTab, setActiveTab] = useState<"general" | "whatsapp" | "calendar" | "logs">("calendar");
+  const [activeTab, setActiveTab] = useState<"alerts" | "general" | "whatsapp" | "calendar" | "logs">("alerts");
 
   // Feedback Messages
   const [feedback, setFeedback] = useState<{
@@ -160,6 +180,11 @@ export default function AdminProfilePage() {
       setWhatsappNotifyCustomer(p.whatsappNotifyCustomer ?? true);
       setWhatsappProvider(p.whatsappProvider || "callmebot");
       setWhatsappApiKey(p.whatsappApiKey || "");
+      setTelegramEnabled(p.telegramEnabled ?? false);
+      setHasTelegramBotToken(!!p.hasTelegramBotToken);
+      setTelegramChatId(p.telegramChatId || "");
+      setEmailNotifyCustomer(p.emailNotifyCustomer ?? true);
+        setTestEmailTo(p.email || "");
       setCalendarFeedUrl(p.calendarFeedUrl || "");
       setGoogleCalendarEmail(p.googleCalendarEmail || "");
       setGoogleCalendarId(p.googleCalendarId || "");
@@ -210,6 +235,11 @@ export default function AdminProfilePage() {
         setWhatsappNotifyCustomer(p.whatsappNotifyCustomer ?? true);
         setWhatsappProvider(p.whatsappProvider || "callmebot");
         setWhatsappApiKey(p.whatsappApiKey || "");
+      setTelegramEnabled(p.telegramEnabled ?? false);
+      setHasTelegramBotToken(!!p.hasTelegramBotToken);
+      setTelegramChatId(p.telegramChatId || "");
+      setEmailNotifyCustomer(p.emailNotifyCustomer ?? true);
+        setTestEmailTo(p.email || "");
         setCalendarFeedUrl(p.calendarFeedUrl || "");
         setGoogleCalendarEmail(p.googleCalendarEmail || "");
         setGoogleCalendarId(p.googleCalendarId || "");
@@ -222,7 +252,13 @@ export default function AdminProfilePage() {
         if (typeof window !== "undefined") {
           const params = new URLSearchParams(window.location.search);
           const tab = params.get("tab");
-          if (tab === "whatsapp" || tab === "calendar" || tab === "general" || tab === "logs") {
+          if (
+            tab === "alerts" ||
+            tab === "whatsapp" ||
+            tab === "calendar" ||
+            tab === "general" ||
+            tab === "logs"
+          ) {
             setActiveTab(tab);
           }
         }
@@ -300,6 +336,9 @@ export default function AdminProfilePage() {
         whatsappNotifyCustomer,
         whatsappProvider,
         whatsappApiKey,
+        telegramEnabled,
+        telegramChatId,
+        emailNotifyCustomer,
         googleCalendarEmail,
         googleCalendarId,
         googleServiceAccountEmail,
@@ -307,6 +346,9 @@ export default function AdminProfilePage() {
 
       if (googlePrivateKey.trim()) {
         payload.googlePrivateKey = googlePrivateKey.trim();
+      }
+      if (telegramBotToken.trim()) {
+        payload.telegramBotToken = telegramBotToken.trim();
       }
 
       if (newPassword && currentPassword) {
@@ -335,6 +377,7 @@ export default function AdminProfilePage() {
       setNewPassword("");
       setConfirmPassword("");
       setGooglePrivateKey("");
+      setTelegramBotToken("");
 
       await loadProfile(true);
     } catch (err: unknown) {
@@ -344,6 +387,90 @@ export default function AdminProfilePage() {
       });
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  // Telegram: detect the chat ID of whoever last messaged the bot
+  const handleDetectChatId = async () => {
+    setDetectingChatId(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/admin/profile/test-telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "detect",
+          botToken: telegramBotToken.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.botUsername) setTelegramBotUsername(data.botUsername);
+      if (!res.ok) throw new Error(data.error || "Could not detect chat ID");
+      setTelegramChatId(data.chatId);
+      setTelegramEnabled(true);
+      setFeedback({
+        type: "success",
+        message: `Found chat ID ${data.chatId}${data.chatName ? ` (${data.chatName})` : ""}. Click "Save Changes", then "Send Test Telegram Alert".`,
+      });
+    } catch (err: unknown) {
+      setFeedback({
+        type: "warning",
+        message: err instanceof Error ? err.message : "Could not detect chat ID",
+      });
+    } finally {
+      setDetectingChatId(false);
+    }
+  };
+
+  // Telegram: send test alert
+  const handleTestTelegram = async () => {
+    setTestingTelegram(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/admin/profile/test-telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "test",
+          botToken: telegramBotToken.trim() || undefined,
+          chatId: telegramChatId.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Telegram test failed");
+      setFeedback({ type: "success", message: "Test alert sent! Check your Telegram app." });
+      await loadProfile(true);
+    } catch (err: unknown) {
+      setFeedback({
+        type: "error",
+        message: err instanceof Error ? err.message : "Telegram test failed",
+      });
+    } finally {
+      setTestingTelegram(false);
+    }
+  };
+
+  // Email: send test receipt
+  const handleTestEmail = async () => {
+    setTestingEmail(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/admin/profile/test-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: testEmailTo.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Email test failed");
+      setFeedback({ type: "success", message: `${data.message}. Check the inbox (and spam folder).` });
+      await loadProfile(true);
+    } catch (err: unknown) {
+      setFeedback({
+        type: "error",
+        message: err instanceof Error ? err.message : "Email test failed",
+      });
+    } finally {
+      setTestingEmail(false);
     }
   };
 
@@ -637,6 +764,7 @@ export default function AdminProfilePage() {
       {/* Navigation Tabs */}
       <div className="flex border-b border-white/5 space-x-1 sm:space-x-4">
         {[
+          { id: "alerts", label: "Telegram & Email Alerts", icon: BellRing },
           { id: "whatsapp", label: "WhatsApp Notifications", icon: MessageSquare },
           { id: "calendar", label: "Google Calendar & Gmail", icon: Calendar },
           { id: "general", label: "Admin Credentials", icon: User },
@@ -663,6 +791,274 @@ export default function AdminProfilePage() {
       </div>
 
       <form onSubmit={handleSaveProfile} className="space-y-8">
+        {/* TAB 0: TELEGRAM (ADMIN) & EMAIL (CUSTOMER) ALERTS */}
+        {activeTab === "alerts" && (
+          <div className="space-y-6">
+            {/* How it works */}
+            <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-slate-300 space-y-1.5">
+              <div className="flex items-center gap-2 font-bold text-indigo-300 text-sm">
+                <Sparkles className="w-4 h-4 text-indigo-400" />
+                <span>How booking notifications work (Option D)</span>
+              </div>
+              <p>
+                <strong className="text-white">You (Admin)</strong> get an instant <strong className="text-sky-300">Telegram</strong> message for every new booking, payment, reschedule and cancellation.
+              </p>
+              <p>
+                <strong className="text-white">Your customers</strong> get a branded <strong className="text-pink-300">email receipt</strong> automatically.
+              </p>
+              <p>
+                You can still send customers a personal WhatsApp message with 1 click from{" "}
+                <Link href="/admin/notifications" className="text-indigo-400 underline">Notifications</Link> or{" "}
+                <Link href="/admin/calendar" className="text-indigo-400 underline">Calendar</Link>. No WhatsApp setup needed.
+              </p>
+            </div>
+
+            {/* TELEGRAM CARD */}
+            <div className="bg-[#131622] border border-white/5 rounded-2xl p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
+                    <Send className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      Telegram Admin Alerts
+                      {telegramEnabled && (hasTelegramBotToken || envDefaults?.hasEnvTelegramBotToken) && telegramChatId ? (
+                        <span className="text-[10px] uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="text-[10px] uppercase font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                          Not Set Up
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Free, official Telegram Bot API. Takes about 2 minutes.
+                    </p>
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={telegramEnabled}
+                    onChange={(e) => setTelegramEnabled(e.target.checked)}
+                    className="w-4 h-4 rounded bg-slate-800 border-white/10"
+                  />
+                  Enable Telegram alerts
+                </label>
+              </div>
+
+              {/* Steps */}
+              <ol className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <li className="bg-[#0b0e17] p-3.5 rounded-lg border border-sky-500/20 space-y-1.5">
+                  <span className="font-bold text-sky-300 block">Step 1: Create your bot</span>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    In Telegram, open{" "}
+                    <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-sky-400 underline">
+                      @BotFather
+                    </a>
+                    , send <code className="text-sky-300">/newbot</code>, pick a name (e.g. <em>EasyBook Alerts</em>) and a username ending in <code className="text-sky-300">bot</code>.
+                  </p>
+                </li>
+                <li className="bg-[#0b0e17] p-3.5 rounded-lg border border-sky-500/20 space-y-1.5">
+                  <span className="font-bold text-sky-300 block">Step 2: Paste the token</span>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    BotFather replies with a token like{" "}
+                    <code className="text-sky-300 break-all">123456789:AAH...xyz</code>. Paste it below.
+                  </p>
+                </li>
+                <li className="bg-[#0b0e17] p-3.5 rounded-lg border border-sky-500/20 space-y-1.5">
+                  <span className="font-bold text-sky-300 block">Step 3: Say hi &amp; detect</span>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    Open your new bot{telegramBotUsername ? (
+                      <>
+                        {" "}(
+                        <a href={`https://t.me/${telegramBotUsername}`} target="_blank" rel="noreferrer" className="text-sky-400 underline">
+                          @{telegramBotUsername}
+                        </a>
+                        )
+                      </>
+                    ) : null}
+                    , press <strong>START</strong>, then click <strong>Detect Chat ID</strong> and <strong>Save Changes</strong>.
+                  </p>
+                </li>
+              </ol>
+
+              {/* Inputs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Bot Token
+                  </label>
+                  <input
+                    type="password"
+                    value={telegramBotToken}
+                    onChange={(e) => setTelegramBotToken(e.target.value)}
+                    autoComplete="off"
+                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500/60 font-mono"
+                    placeholder={
+                      hasTelegramBotToken
+                        ? "•••••••• saved (paste a new one to replace)"
+                        : envDefaults?.hasEnvTelegramBotToken
+                        ? "Using TELEGRAM_BOT_TOKEN from environment"
+                        : "123456789:AAH..."
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Your Chat ID
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={telegramChatId}
+                      onChange={(e) => setTelegramChatId(e.target.value)}
+                      className="flex-1 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500/60 font-mono"
+                      placeholder="Click Detect →"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleDetectChatId}
+                      disabled={detectingChatId}
+                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2.5 bg-sky-600/20 hover:bg-sky-600/30 text-sky-200 border border-sky-500/30 rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-50"
+                    >
+                      {detectingChatId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      Detect Chat ID
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Triggers (shared with WhatsApp settings) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5 cursor-pointer">
+                  <span>
+                    <span className="text-xs font-semibold text-white block">On booking hold</span>
+                    <span className="text-[11px] text-slate-400">When a customer locks a slot (before payment).</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={whatsappNotifyOnCheckout}
+                    onChange={(e) => setWhatsappNotifyOnCheckout(e.target.checked)}
+                    className="w-4 h-4 rounded bg-slate-800 border-white/10"
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5 cursor-pointer">
+                  <span>
+                    <span className="text-xs font-semibold text-white block">On payment confirmed</span>
+                    <span className="text-[11px] text-slate-400">When payment succeeds. Reschedules &amp; cancellations are always sent.</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={whatsappNotifyOnConfirm}
+                    onChange={(e) => setWhatsappNotifyOnConfirm(e.target.checked)}
+                    className="w-4 h-4 rounded bg-slate-800 border-white/10"
+                  />
+                </label>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleTestTelegram}
+                  disabled={testingTelegram}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-50"
+                >
+                  {testingTelegram ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  Send Test Telegram Alert
+                </button>
+              </div>
+            </div>
+
+            {/* EMAIL CARD */}
+            <div className="bg-[#131622] border border-white/5 rounded-2xl p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      Customer Email Receipts
+                      {envDefaults?.emailConfigured ? (
+                        <span className="text-[10px] uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                          API Key Detected
+                        </span>
+                      ) : (
+                        <span className="text-[10px] uppercase font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                          Needs RESEND_API_KEY
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Sent through Resend (free tier: 3,000 emails/month).
+                    </p>
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={emailNotifyCustomer}
+                    onChange={(e) => setEmailNotifyCustomer(e.target.checked)}
+                    className="w-4 h-4 rounded bg-slate-800 border-white/10"
+                  />
+                  Email customers automatically
+                </label>
+              </div>
+
+              <ol className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <li className="bg-[#0b0e17] p-3.5 rounded-lg border border-pink-500/20 space-y-1.5">
+                  <span className="font-bold text-pink-300 block">Step 1: Get an API key</span>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    Sign up at{" "}
+                    <a href="https://resend.com/signup" target="_blank" rel="noreferrer" className="text-pink-400 underline">
+                      resend.com
+                    </a>{" "}
+                    and create a key under <strong>API Keys</strong>.
+                  </p>
+                </li>
+                <li className="bg-[#0b0e17] p-3.5 rounded-lg border border-pink-500/20 space-y-1.5">
+                  <span className="font-bold text-pink-300 block">Step 2: Add to Vercel</span>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    Add <code className="text-pink-300">RESEND_API_KEY</code> (and optionally <code className="text-pink-300">EMAIL_FROM</code>) in Vercel → Settings → Environment Variables, then redeploy.
+                  </p>
+                </li>
+                <li className="bg-[#0b0e17] p-3.5 rounded-lg border border-pink-500/20 space-y-1.5">
+                  <span className="font-bold text-pink-300 block">Step 3: Verify your domain</span>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    Until you verify a domain in Resend, emails can only go to <strong>your own Resend account email</strong>. Verify a domain to email real customers.
+                  </p>
+                </li>
+              </ol>
+
+              <div className="text-[11px] text-slate-400">
+                Sending from: <code className="text-slate-200">{envDefaults?.emailFrom || "EasyBook Studio <onboarding@resend.dev>"}</code>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-end">
+                <input
+                  type="email"
+                  value={testEmailTo}
+                  onChange={(e) => setTestEmailTo(e.target.value)}
+                  className="sm:w-72 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-pink-500/60"
+                  placeholder="Send test to..."
+                />
+                <button
+                  type="button"
+                  onClick={handleTestEmail}
+                  disabled={testingEmail}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-600 hover:bg-pink-500 text-white rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-50"
+                >
+                  {testingEmail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                  Send Test Email
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* TAB 1: WHATSAPP NOTIFICATIONS */}
         {activeTab === "whatsapp" && (
           <div className="space-y-6">

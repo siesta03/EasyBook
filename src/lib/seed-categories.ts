@@ -31,6 +31,18 @@ export async function ensureCategoryPackagesSeeded(force = false) {
       await prisma.$executeRawUnsafe(
         `ALTER TABLE "ServicePackage" ADD COLUMN IF NOT EXISTS "category" TEXT NOT NULL DEFAULT 'Indoor Photoshoot';`
       );
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "AdminUser" ADD COLUMN IF NOT EXISTS "telegramEnabled" BOOLEAN NOT NULL DEFAULT false;`
+      );
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "AdminUser" ADD COLUMN IF NOT EXISTS "telegramBotToken" TEXT;`
+      );
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "AdminUser" ADD COLUMN IF NOT EXISTS "telegramChatId" TEXT;`
+      );
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "AdminUser" ADD COLUMN IF NOT EXISTS "emailNotifyCustomer" BOOLEAN NOT NULL DEFAULT true;`
+      );
     } catch {
       // Ignore if running in mock/read-only test environment
     }

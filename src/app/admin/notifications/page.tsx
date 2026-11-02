@@ -22,6 +22,7 @@ import {
   Sparkles,
   Settings,
   Phone,
+  Mail,
 } from "lucide-react";
 import { formatMYR, getCategoryBadgeClass } from "@/lib/categories";
 
@@ -42,6 +43,8 @@ interface NotificationStats {
   total: number;
   unreadCount: number;
   whatsappCount: number;
+  telegramCount?: number;
+  emailCount?: number;
   calendarCount: number;
   adminAlertsCount: number;
   customerAlertsCount: number;
@@ -70,6 +73,8 @@ export default function AdminNotificationsPage() {
     total: 0,
     unreadCount: 0,
     whatsappCount: 0,
+    telegramCount: 0,
+    emailCount: 0,
     calendarCount: 0,
     adminAlertsCount: 0,
     customerAlertsCount: 0,
@@ -77,6 +82,12 @@ export default function AdminNotificationsPage() {
     simulatedCount: 0,
     failedCount: 0,
   });
+  const [alertChannels, setAlertChannels] = useState<{
+    telegramEnabled: boolean;
+    telegramConfigured: boolean;
+    emailConfigured: boolean;
+    emailNotifyCustomer: boolean;
+  } | null>(null);
   const [whatsappConfig, setWhatsappConfig] = useState<{
     whatsappNumber: string;
     whatsappEnabled: boolean;
@@ -126,6 +137,7 @@ export default function AdminNotificationsPage() {
         setNotifications(data.notifications || []);
         if (data.stats) setStats(data.stats);
         if (data.whatsappConfig) setWhatsappConfig(data.whatsappConfig);
+        if (data.alertChannels) setAlertChannels(data.alertChannels);
         if (data.recentBookings) {
           setRecentBookings(data.recentBookings);
           if (!selectedBookingId && data.recentBookings.length > 0) {
@@ -158,6 +170,8 @@ export default function AdminNotificationsPage() {
             setNotifications(data.notifications || []);
             if (data.stats) setStats(data.stats);
             if (data.whatsappConfig) setWhatsappConfig(data.whatsappConfig);
+            if (data.alertChannels) setAlertChannels(data.alertChannels);
+        if (data.alertChannels) setAlertChannels(data.alertChannels);
             if (data.recentBookings) {
               setRecentBookings(data.recentBookings);
               if (data.recentBookings.length > 0) {
@@ -384,23 +398,32 @@ export default function AdminNotificationsPage() {
         <div className="glass-card p-5 rounded-2xl border border-white/10">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Gateway Status
+              Channels (Option D)
             </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <MessageSquare className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center">
+              <Send className="w-4 h-4" />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-extrabold text-white">
-              {whatsappConfig?.hasApiKey ? "Live API Active" : "1-Click / Sim Mode"}
-            </span>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${alertChannels?.telegramConfigured ? "bg-emerald-400" : "bg-amber-400"}`} />
+              <span className="text-xs font-semibold text-white">
+                Telegram: {alertChannels?.telegramConfigured ? "Connected" : "Setup Required"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${alertChannels?.emailConfigured ? "bg-emerald-400" : "bg-slate-500"}`} />
+              <span className="text-xs font-semibold text-slate-300">
+                Email: {alertChannels?.emailConfigured ? "Resend Active" : "1-Click WA Active"}
+              </span>
+            </div>
           </div>
           <Link
-            href="/admin/profile?tab=whatsapp"
-            className="text-[11px] text-indigo-400 hover:underline mt-1 inline-flex items-center gap-1"
+            href="/admin/profile?tab=alerts"
+            className="text-[11px] text-sky-400 hover:underline mt-2 inline-flex items-center gap-1"
           >
             <Settings className="w-3 h-3" />
-            Configure Gateway ({whatsappConfig?.whatsappProvider || "callmebot"})
+            Manage Telegram &amp; Email Alerts
           </Link>
         </div>
       </div>
@@ -582,6 +605,8 @@ export default function AdminNotificationsPage() {
             className="bg-[#121521] border border-white/10 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-200"
           >
             <option value="ALL">All Channels</option>
+            <option value="TELEGRAM">Telegram</option>
+            <option value="EMAIL">Email</option>
             <option value="WHATSAPP">WhatsApp</option>
             <option value="GOOGLE_CALENDAR">Google Calendar</option>
           </select>
@@ -650,11 +675,19 @@ export default function AdminNotificationsPage() {
                         className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                           n.channel === "WHATSAPP"
                             ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                            : n.channel === "TELEGRAM"
+                            ? "bg-sky-500/15 text-sky-300 border-sky-500/30"
+                            : n.channel === "EMAIL"
+                            ? "bg-pink-500/15 text-pink-300 border-pink-500/30"
                             : "bg-blue-500/15 text-blue-300 border-blue-500/30"
                         }`}
                       >
                         {n.channel === "WHATSAPP" ? (
                           <MessageSquare className="w-3 h-3" />
+                        ) : n.channel === "TELEGRAM" ? (
+                          <Send className="w-3 h-3" />
+                        ) : n.channel === "EMAIL" ? (
+                          <Mail className="w-3 h-3" />
                         ) : (
                           <Calendar className="w-3 h-3" />
                         )}

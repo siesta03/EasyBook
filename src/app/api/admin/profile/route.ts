@@ -53,6 +53,10 @@ async function formatAdminResponse(admin: {
   whatsappNotifyCustomer?: boolean;
   whatsappProvider: string | null;
   whatsappApiKey: string | null;
+  telegramEnabled?: boolean;
+  telegramBotToken?: string | null;
+  telegramChatId?: string | null;
+  emailNotifyCustomer?: boolean;
   calendarFeedToken: string | null;
   googleCalendarEmail: string | null;
   googleCalendarId: string | null;
@@ -83,6 +87,10 @@ async function formatAdminResponse(admin: {
       whatsappNotifyCustomer: admin.whatsappNotifyCustomer ?? true,
       whatsappProvider: admin.whatsappProvider || "callmebot",
       whatsappApiKey: admin.whatsappApiKey || "",
+      telegramEnabled: admin.telegramEnabled ?? false,
+      hasTelegramBotToken: !!admin.telegramBotToken,
+      telegramChatId: admin.telegramChatId || "",
+      emailNotifyCustomer: admin.emailNotifyCustomer ?? true,
       calendarFeedToken: admin.calendarFeedToken || "",
       calendarFeedUrl,
       googleCalendarEmail: admin.googleCalendarEmail || "",
@@ -98,6 +106,10 @@ async function formatAdminResponse(admin: {
       envGoogleServiceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "",
       hasEnvGooglePrivateKey: !!process.env.GOOGLE_PRIVATE_KEY,
       envGoogleCalendarId: process.env.GOOGLE_CALENDAR_ID || "",
+      hasEnvTelegramBotToken: !!process.env.TELEGRAM_BOT_TOKEN,
+      hasEnvTelegramChatId: !!process.env.TELEGRAM_CHAT_ID,
+      emailConfigured: !!process.env.RESEND_API_KEY,
+      emailFrom: process.env.EMAIL_FROM || "EasyBook Studio <onboarding@resend.dev>",
     },
     recentLogs,
   });
@@ -114,6 +126,11 @@ const updateProfileSchema = z.object({
   whatsappNotifyCustomer: z.boolean().optional(),
   whatsappProvider: z.string().optional(),
   whatsappApiKey: z.string().optional().nullable(),
+  telegramEnabled: z.boolean().optional(),
+  telegramBotToken: z.string().optional().nullable(),
+  telegramChatId: z.string().optional().nullable(),
+  clearTelegramBotToken: z.boolean().optional(),
+  emailNotifyCustomer: z.boolean().optional(),
   googleCalendarEmail: z.string().optional().nullable(),
   googleCalendarId: z.string().optional().nullable(),
   googleServiceAccountEmail: z.string().optional().nullable(),
@@ -160,6 +177,11 @@ export async function PATCH(request: Request) {
       whatsappNotifyCustomer,
       whatsappProvider,
       whatsappApiKey,
+      telegramEnabled,
+      telegramBotToken,
+      telegramChatId,
+      clearTelegramBotToken,
+      emailNotifyCustomer,
       googleCalendarEmail,
       googleCalendarId,
       googleServiceAccountEmail,
@@ -204,6 +226,21 @@ export async function PATCH(request: Request) {
     }
     if (whatsappApiKey !== undefined) {
       updateData.whatsappApiKey = whatsappApiKey ? whatsappApiKey.trim() : null;
+    }
+
+    // 2b. Telegram (Admin alerts) & Email (Customer receipts)
+    if (telegramEnabled !== undefined) updateData.telegramEnabled = telegramEnabled;
+    if (clearTelegramBotToken) {
+      updateData.telegramBotToken = null;
+    } else if (telegramBotToken && telegramBotToken.trim().length > 0) {
+      // Only overwrite the stored token when a new one is provided
+      updateData.telegramBotToken = telegramBotToken.trim();
+    }
+    if (telegramChatId !== undefined) {
+      updateData.telegramChatId = telegramChatId ? telegramChatId.trim() : null;
+    }
+    if (emailNotifyCustomer !== undefined) {
+      updateData.emailNotifyCustomer = emailNotifyCustomer;
     }
 
     // 3. Google Calendar & Gmail integration settings

@@ -4,9 +4,10 @@ import { prisma } from "@/lib/prisma";
 import {
   sendAdminWhatsAppNotification,
   sendCustomerWhatsAppNotification,
-  sendBookingWhatsAppNotifications,
   NotificationEventType,
 } from "@/lib/whatsapp";
+import { sendBookingNotifications } from "@/lib/notifications";
+import { isEmailConfigured } from "@/lib/email";
 
 export async function GET(request: Request) {
   try {
@@ -68,6 +69,8 @@ export async function GET(request: Request) {
       total: allStats.length,
       unreadCount: allStats.filter((n) => !n.isRead).length,
       whatsappCount: allStats.filter((n) => n.channel === "WHATSAPP").length,
+      telegramCount: allStats.filter((n) => n.channel === "TELEGRAM").length,
+      emailCount: allStats.filter((n) => n.channel === "EMAIL").length,
       calendarCount: allStats.filter((n) => n.channel === "GOOGLE_CALENDAR").length,
       adminAlertsCount: allStats.filter((n) => n.recipientRole === "ADMIN").length,
       customerAlertsCount: allStats.filter((n) => n.recipientRole === "CUSTOMER").length,
@@ -87,6 +90,15 @@ export async function GET(request: Request) {
         whatsappNotifyCustomer: admin?.whatsappNotifyCustomer ?? true,
         whatsappProvider: admin?.whatsappProvider || "callmebot",
         hasApiKey: !!admin?.whatsappApiKey,
+      },
+      alertChannels: {
+        telegramEnabled: admin?.telegramEnabled ?? false,
+        telegramConfigured: !!(
+          (admin?.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN) &&
+          (admin?.telegramChatId || process.env.TELEGRAM_CHAT_ID)
+        ),
+        emailConfigured: isEmailConfigured(),
+        emailNotifyCustomer: admin?.emailNotifyCustomer ?? true,
       },
       recentBookings,
     });
@@ -177,7 +189,7 @@ export async function POST(request: Request) {
     }
 
     if (recipientRole === "BOTH") {
-      const results = await sendBookingWhatsAppNotifications({
+      const results = await sendBookingNotifications({
         eventType: eventType as NotificationEventType,
         booking,
         service: booking.service,

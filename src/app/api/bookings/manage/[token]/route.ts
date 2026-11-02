@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { deleteCalendarEvent } from "@/lib/google-calendar";
-import { sendBookingWhatsAppNotifications } from "@/lib/whatsapp";
+import { sendBookingNotifications } from "@/lib/notifications";
 
 export async function GET(
   _request: Request,
@@ -102,7 +102,7 @@ export async function PATCH(
     }
 
     // Dispatch WhatsApp cancellation notifications to Customer and Admin
-    await sendBookingWhatsAppNotifications({
+    await sendBookingNotifications({
       eventType: "BOOKING_CANCELLED",
       booking: updated,
       service: updated.service,

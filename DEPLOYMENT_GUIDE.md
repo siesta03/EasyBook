@@ -33,10 +33,16 @@ In **Vercel Dashboard -> Settings -> Environment Variables**, ensure the followi
 | `JWT_SECRET` | Yes | `easybook-super-secret-jwt-key-2026-production` | Secret key used to sign Admin session JWT cookies |
 | `TIMEZONE` | Yes | `Asia/Kuala_Lumpur` | Studio operating timezone (`UTC+8` Malaysia) |
 | `NEXT_PUBLIC_APP_URL` | Yes | `https://your-project.vercel.app` | Public URL used in booking manage links & WhatsApp notifications |
+| `RESEND_API_KEY` | Optional | `re_123...` | API key from resend.com for customer email receipts |
+| `EMAIL_FROM` | Optional | `EasyBook Studio <bookings@yourdomain.com>` | Custom sender email address |
+| `TELEGRAM_BOT_TOKEN` | Optional | `123456789:AAH...` | Telegram bot token from @BotFather (can also be saved in Admin Profile) |
+| `TELEGRAM_CHAT_ID` | Optional | `123456789` | Telegram chat ID for admin alerts (can also be saved in Admin Profile) |
 | `WHATSAPP_API_PROVIDER` | Optional | `META` / `FONNTE` / `TWILIO` / `WEBHOOK` | Optional automated WhatsApp API provider (defaults to simulation + 1-Click `wa.me` links in `/admin/notifications`) |
 | `WHATSAPP_API_TOKEN` | Optional | `your-api-token` | API token for automated WhatsApp dispatching |
 
-> **WhatsApp Setup**: For step-by-step setup guides (1-Click WhatsApp, CallMeBot, and Fonnte), see [WHATSAPP_SETUP_GUIDE.md](file:///c:/Users/gmdby/EasyBook/WHATSAPP_SETUP_GUIDE.md).
+> **Notification Setup**:
+> - For **Option D (Direct Telegram + Email Receipts)**, see [NOTIFICATION_SETUP_GUIDE.md](file:///c:/Users/gmdby/EasyBook/NOTIFICATION_SETUP_GUIDE.md).
+> - For **WhatsApp Setup (1-Click, CallMeBot, Fonnte)**, see [WHATSAPP_SETUP_GUIDE.md](file:///c:/Users/gmdby/EasyBook/WHATSAPP_SETUP_GUIDE.md).
 
 ---
 

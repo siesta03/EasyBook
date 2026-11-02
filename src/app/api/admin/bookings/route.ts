@@ -3,7 +3,7 @@ import { addMinutes } from "date-fns";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createCalendarEvent, deleteCalendarEvent } from "@/lib/google-calendar";
-import { sendBookingWhatsAppNotifications } from "@/lib/whatsapp";
+import { sendBookingNotifications } from "@/lib/notifications";
 import { BookingStatus } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -212,7 +212,7 @@ export async function PATCH(request: Request) {
           : null;
 
       if (eventType) {
-        await sendBookingWhatsAppNotifications({
+        await sendBookingNotifications({
           eventType,
           booking: updatedBooking,
           service: updatedBooking.service,

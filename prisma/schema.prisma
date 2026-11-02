@@ -27,6 +27,10 @@ model AdminUser {
   whatsappNotifyCustomer    Boolean  @default(true)
   whatsappProvider          String?  @default("callmebot")
   whatsappApiKey            String?
+  telegramEnabled           Boolean  @default(false)
+  telegramBotToken          String?
+  telegramChatId            String?
+  emailNotifyCustomer       Boolean  @default(true)
   calendarFeedToken         String?  @default(uuid())
   googleCalendarEmail       String?
   googleCalendarId          String?
@@ -39,7 +43,7 @@ model AdminUser {
 
 model NotificationLog {
   id            String   @id @default(uuid())
-  channel       String   // "WHATSAPP", "GOOGLE_CALENDAR"
+  channel       String   // "WHATSAPP", "TELEGRAM", "EMAIL", "GOOGLE_CALENDAR"
   recipient     String
   recipientRole String   @default("ADMIN") // "ADMIN", "CUSTOMER"
   eventType     String   // "BOOKING_CREATED", "BOOKING_CONFIRMED", "BOOKING_CANCELLED", "BOOKING_RESCHEDULED", "TEST"
