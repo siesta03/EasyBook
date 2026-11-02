@@ -643,16 +643,12 @@ export default function AdminProfilePage() {
       </div>
 
       {/* Profile Overview Banner with Honest, Accurate Status */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-950/40 via-purple-950/20 to-slate-900 border border-indigo-500/20 p-6 shadow-xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] p-5">
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-pink-500 p-0.5 shadow-lg shadow-indigo-600/30 shrink-0">
-              <div className="w-full h-full bg-[#0d0f18] rounded-[14px] flex items-center justify-center">
-                <span className="text-xl font-extrabold text-white">
-                  {name ? name.charAt(0).toUpperCase() : "A"}
-                </span>
-              </div>
+            <div className="w-12 h-12 rounded-full bg-[#cc0000] text-white font-bold flex items-center justify-center text-lg shrink-0">
+              {name ? name.charAt(0).toUpperCase() : "A"}
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -762,7 +758,7 @@ export default function AdminProfilePage() {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex border-b border-white/5 space-x-1 sm:space-x-4">
+      <div className="flex border-b border-[#2a2a2a] space-x-1 sm:space-x-4">
         {[
           { id: "alerts", label: "Telegram & Email Alerts", icon: BellRing },
           { id: "whatsapp", label: "WhatsApp Notifications", icon: MessageSquare },
@@ -777,13 +773,13 @@ export default function AdminProfilePage() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+              className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium border-b-2 transition-all cursor-pointer ${
                 isActive
-                  ? "border-indigo-500 text-white"
-                  : "border-transparent text-slate-400 hover:text-slate-200 hover:border-white/20"
+                  ? "border-[#f1f1f1] text-[#f1f1f1] font-semibold"
+                  : "border-transparent text-[#aaaaaa] hover:text-[#f1f1f1] hover:border-[#383838]"
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? "text-indigo-400" : "text-slate-500"}`} />
+              <Icon className={`w-4 h-4 ${isActive ? "text-[#f1f1f1]" : "text-[#717171]"}`} />
               <span>{tab.label}</span>
             </button>
           );
@@ -795,27 +791,22 @@ export default function AdminProfilePage() {
         {activeTab === "alerts" && (
           <div className="space-y-6">
             {/* How it works */}
-            <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-slate-300 space-y-1.5">
-              <div className="flex items-center gap-2 font-bold text-indigo-300 text-sm">
-                <Sparkles className="w-4 h-4 text-indigo-400" />
-                <span>How booking notifications work (Option D)</span>
+            <div className="p-4 rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] text-xs text-[#aaaaaa] space-y-1.5">
+              <div className="flex items-center gap-2 font-semibold text-[#f1f1f1] text-xs uppercase tracking-wider">
+                <BellRing className="w-4 h-4 text-[#ff4e4e]" />
+                <span>Booking Notifications Setup</span>
               </div>
               <p>
-                <strong className="text-white">You (Admin)</strong> get an instant <strong className="text-sky-300">Telegram</strong> message for every new booking, payment, reschedule and cancellation.
+                <strong className="text-[#f1f1f1]">Studio Admin:</strong> Instant Telegram notification for every new booking, reschedule, and cancellation.
               </p>
               <p>
-                <strong className="text-white">Your customers</strong> get a branded <strong className="text-pink-300">email receipt</strong> automatically.
-              </p>
-              <p>
-                You can still send customers a personal WhatsApp message with 1 click from{" "}
-                <Link href="/admin/notifications" className="text-indigo-400 underline">Notifications</Link> or{" "}
-                <Link href="/admin/calendar" className="text-indigo-400 underline">Calendar</Link>. No WhatsApp setup needed.
+                <strong className="text-[#f1f1f1]">Customer:</strong> Automatic email booking receipt via Resend or 1-click WhatsApp message.
               </p>
             </div>
 
             {/* TELEGRAM CARD */}
-            <div className="bg-[#131622] border border-white/5 rounded-2xl p-6 space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2a2a2a] pb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
                     <Send className="w-5 h-5" />
@@ -1337,30 +1328,19 @@ export default function AdminProfilePage() {
                 </div>
               </div>
 
-              {/* Live Preview Bubble */}
-              <div className="border-t border-white/5 pt-4 space-y-2">
-                <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                  Live Preview of WhatsApp Alert Message:
+              {/* Message Template Preview */}
+              <div className="border-t border-[#2a2a2a] pt-4 space-y-2">
+                <span className="text-xs font-semibold text-[#aaaaaa] flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-[#4ade80]" />
+                  Message Template Preview:
                 </span>
-                <div className="max-w-md bg-[#0b141a] p-4 rounded-2xl rounded-tl-sm border border-emerald-500/20 shadow-md font-sans text-xs text-slate-200 space-y-1.5 relative">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-1 mb-2">
-                    <span className="font-bold text-emerald-400">📸 EasyBook Alert Bot</span>
-                    <span className="text-[10px] text-slate-500">Just now</span>
-                  </div>
-                  <p className="font-bold text-emerald-300">📸 *NEW BOOKING RECEIVED!* ⚡</p>
-                  <p className="text-[11px] text-slate-400">━━━━━━━━━━━━━━━━━━</p>
-                  <p>👤 *Client:* Azfar</p>
-                  <p>📞 *Phone:* +60189779241</p>
-                  <p>✉️ *Email:* azfar@example.com</p>
-                  <p className="pt-1">🏷️ *Category:* Indoor Photoshoot</p>
-                  <p>📦 *Package:* Full Studio Editorial &amp; Fashion (150m + 30m buffer)</p>
-                  <p>📅 *Date:* Saturday, Oct 24, 2026</p>
-                  <p>⏰ *Time:* 02:00 PM - 04:30 PM</p>
-                  <p>💵 *Amount:* RM 580.00</p>
-                  <p className="text-[11px] text-slate-400">━━━━━━━━━━━━━━━━━━</p>
-                  <p className="text-amber-400">⏳ *Status:* Pending Payment (15-min hold)</p>
-                  <p className="text-indigo-400 underline">🔗 View in Admin Calendar</p>
+                <div className="max-w-md bg-[#121212] p-4 rounded-xl border border-[#2a2a2a] font-mono text-[11px] text-[#aaaaaa] space-y-1">
+                  <p className="text-[#f1f1f1] font-semibold">EasyBook: New Booking Received</p>
+                  <p>Client: Azfar (+60189779241)</p>
+                  <p>Service: Studio Editorial &amp; Fashion</p>
+                  <p>Date &amp; Time: 24 Oct 2026, 02:00 PM</p>
+                  <p>Amount: RM 580.00</p>
+                  <p className="text-[#facc15]">Status: Pending Payment (Hold)</p>
                 </div>
               </div>
             </div>
@@ -1371,21 +1351,18 @@ export default function AdminProfilePage() {
         {activeTab === "calendar" && (
           <div className="space-y-6">
             {/* Localhost Explanation Alert */}
-            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs space-y-2">
-              <div className="flex items-center gap-2 font-bold text-amber-300 text-sm">
-                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Why did Google Calendar say &quot;Could not fetch URL&quot;?</span>
+            <div className="p-4 rounded-xl bg-[#202020] border border-[#2a2a2a] text-[#aaaaaa] text-xs space-y-2">
+              <div className="flex items-center gap-2 font-semibold text-[#f1f1f1] text-xs uppercase tracking-wider">
+                <AlertCircle className="w-4 h-4 text-[#facc15] shrink-0" />
+                <span>Google Calendar Sync Notice</span>
               </div>
-              <p className="leading-relaxed text-slate-300">
-                You are currently running EasyBook on <code className="bg-black/30 px-1.5 py-0.5 rounded text-amber-300">http://localhost:3000</code>. Google&apos;s cloud servers (at <code>google.com</code>) cannot connect to your private computer&apos;s localhost address.
-              </p>
-              <p className="text-slate-300 font-medium">
-                👉 To sync your photoshoot bookings into Google Calendar while developing locally, use <strong>Option 1 (Download &amp; Import)</strong> or <strong>Option 2 (1-Click Add Event)</strong> below — both work 100% on localhost!
+              <p className="leading-relaxed">
+                When running on localhost, Google cloud servers cannot reach your local machine. Use Option 1 (Download .ics) or Option 2 (1-Click Google Calendar event link) to sync directly. In production with a public URL, live subscription feeds work automatically.
               </p>
             </div>
 
-            {/* OPTION 1: DOWNLOAD & IMPORT .ICS (100% WORKING ON LOCALHOST) */}
-            <div className="bg-gradient-to-br from-indigo-950/40 via-blue-950/30 to-slate-900 border border-blue-500/30 rounded-2xl p-6 space-y-5 shadow-xl">
+            {/* OPTION 1: DOWNLOAD & IMPORT .ICS */}
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-5 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
@@ -1920,14 +1897,14 @@ export default function AdminProfilePage() {
         )}
 
         {/* Action Save Bar */}
-        <div className="flex items-center justify-between border-t border-white/5 pt-6">
-          <div className="text-xs text-slate-500">
-            Changes will take effect immediately upon saving.
+        <div className="flex items-center justify-between border-t border-[#2a2a2a] pt-5">
+          <div className="text-xs text-[#717171]">
+            Changes take effect immediately upon saving.
           </div>
           <button
             type="submit"
             disabled={savingProfile}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#f1f1f1] hover:bg-white text-[#0f0f0f] font-semibold text-xs rounded-full transition-colors cursor-pointer disabled:opacity-50"
           >
             {savingProfile ? (
               <>
@@ -1937,7 +1914,7 @@ export default function AdminProfilePage() {
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                Save All Profile Changes
+                Save Changes
               </>
             )}
           </button>

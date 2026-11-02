@@ -97,3 +97,4 @@ Add these in **Vercel Dashboard ➔ Settings ➔ Environment Variables**:
 | `TELEGRAM_CHAT_ID` | Optional | EasyBook Auto-Detect | (Can also be set in Admin Profile UI) |
 | `RESEND_API_KEY` | Optional | `resend.com` | Powers customer email receipts |
 | `EMAIL_FROM` | Optional | Your domain | Custom sender address |
+

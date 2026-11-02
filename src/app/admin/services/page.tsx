@@ -10,7 +10,7 @@ import {
   Loader2,
   Camera,
   Layers,
-  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import {
   PHOTOSHOOT_CATEGORIES,
@@ -101,33 +101,32 @@ export default function AdminServicesPage() {
   }, [services, selectedCategoryTab]);
 
   const openCreateModal = () => {
-    const defaultCat =
-      selectedCategoryTab !== "ALL"
-        ? selectedCategoryTab
-        : PHOTOSHOOT_CATEGORIES[0];
-    const meta = CATEGORY_METADATA[defaultCat as PhotoshootCategory];
-
     setEditingService(null);
     setName("");
+    const defaultCat =
+      selectedCategoryTab === "ALL"
+        ? PHOTOSHOOT_CATEGORIES[0]
+        : selectedCategoryTab;
     setCategory(defaultCat);
     setDescription("");
-    setPrice("250.00");
+    setPrice("180.00");
     setDurationMinutes("60");
-    setBufferMinutes(String(meta?.defaultBufferMinutes ?? 30));
+    const meta = CATEGORY_METADATA[defaultCat as PhotoshootCategory];
+    setBufferMinutes(String(meta?.defaultBufferMinutes || 30));
     setIsActive(true);
     setFormError(null);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (svc: ServicePackage) => {
-    setEditingService(svc);
-    setName(svc.name);
-    setCategory(svc.category || PHOTOSHOOT_CATEGORIES[0]);
-    setDescription(svc.description);
-    setPrice(String(svc.price));
-    setDurationMinutes(String(svc.durationMinutes));
-    setBufferMinutes(String(svc.bufferMinutes));
-    setIsActive(svc.isActive);
+  const openEditModal = (service: ServicePackage) => {
+    setEditingService(service);
+    setName(service.name);
+    setCategory(service.category || "Indoor Photoshoot");
+    setDescription(service.description);
+    setPrice(String(service.price));
+    setDurationMinutes(String(service.durationMinutes));
+    setBufferMinutes(String(service.bufferMinutes));
+    setIsActive(service.isActive);
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -144,24 +143,24 @@ export default function AdminServicesPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setFormError(null);
-
-    const payload = {
-      name,
-      category,
-      description,
-      price: Number(price),
-      durationMinutes: Number(durationMinutes),
-      bufferMinutes: Number(bufferMinutes),
-      isActive,
-    };
+    setIsSubmitting(true);
 
     try {
+      const payload = {
+        name,
+        category,
+        description,
+        price: parseFloat(price),
+        durationMinutes: parseInt(durationMinutes, 10),
+        bufferMinutes: parseInt(bufferMinutes, 10),
+        isActive,
+      };
+
       let res;
       if (editingService) {
         res = await fetch("/api/admin/services", {
-          method: "PATCH",
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: editingService.id, ...payload }),
         });
@@ -173,44 +172,25 @@ export default function AdminServicesPage() {
         });
       }
 
-      const data = await res.json();
-
       if (!res.ok) {
-        throw new Error(data.error || "Failed to save service package");
+        const data = await res.json();
+        throw new Error(data.error || "Failed to save package");
       }
 
+      await fetchServices();
       setIsModalOpen(false);
-      fetchServices();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to save";
+      const msg = err instanceof Error ? err.message : "Submission error";
       setFormError(msg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSeedDefaults = async () => {
-    setIsSeeding(true);
-    try {
-      const res = await fetch("/api/admin/services", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "seed_defaults" }),
-      });
-      if (res.ok) {
-        await fetchServices();
-      }
-    } catch (err) {
-      console.error("Failed to seed defaults:", err);
-    } finally {
-      setIsSeeding(false);
-    }
-  };
-
   const handleDelete = async (id: string) => {
     if (
       !confirm(
-        "Are you sure you want to delete or deactivate this service package?"
+        "Are you sure you want to deactivate or remove this service package?"
       )
     ) {
       return;
@@ -220,17 +200,32 @@ export default function AdminServicesPage() {
       const res = await fetch(`/api/admin/services?id=${id}`, {
         method: "DELETE",
       });
-
-      if (!res.ok) {
+      if (res.ok) {
+        await fetchServices();
+      } else {
         const data = await res.json();
-        throw new Error(data.error || "Failed to delete service");
+        alert(data.error || "Failed to delete package");
       }
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  };
 
-      fetchServices();
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Error deleting service";
-      alert(msg);
+  const handleSeedDefaults = async () => {
+    setIsSeeding(true);
+    try {
+      const res = await fetch("/api/admin/services", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "seed_categories" }),
+      });
+      if (res.ok) {
+        await fetchServices();
+      }
+    } catch (err) {
+      console.error("Seeding failed:", err);
+    } finally {
+      setIsSeeding(false);
     }
   };
 
@@ -239,11 +234,11 @@ export default function AdminServicesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-            Services, Categories &amp; Buffer Intervals
+          <h1 className="text-xl sm:text-2xl font-bold text-[#f1f1f1] tracking-tight">
+            Services &amp; Packages
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Configure photoshoot packages by category (Indoor, Outdoor, Wedding, Sport, Product), Malaysia Ringgit (RM) pricing, duration, and turnaround buffers.
+          <p className="text-xs text-[#aaaaaa] mt-0.5">
+            Configure photoshoot packages, category pricing (RM), and turnaround buffers.
           </p>
         </div>
 
@@ -252,36 +247,36 @@ export default function AdminServicesPage() {
             type="button"
             onClick={handleSeedDefaults}
             disabled={isSeeding}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-slate-300 hover:text-white font-semibold text-xs transition cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#272727] text-[#aaaaaa] hover:text-[#f1f1f1] text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
           >
-            <Sparkles className="w-3.5 h-3.5 text-pink-400" />
-            {isSeeding ? "Syncing Categories..." : "Ensure All 5 Category Packages"}
+            <RefreshCw className={`w-3.5 h-3.5 ${isSeeding ? "animate-spin" : ""}`} />
+            <span>{isSeeding ? "Syncing..." : "Sync Defaults"}</span>
           </button>
 
           <button
             type="button"
             onClick={openCreateModal}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-indigo-500/25 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#f1f1f1] hover:bg-white text-[#0f0f0f] font-semibold text-xs transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            Add New Package
+            <span>New Package</span>
           </button>
         </div>
       </div>
 
-      {/* Category Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2">
+      {/* Category Filter Chips */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         <button
           type="button"
           onClick={() => setSelectedCategoryTab("ALL")}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer whitespace-nowrap ${
             selectedCategoryTab === "ALL"
-              ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-              : "bg-white/[0.03] border border-white/10 text-slate-400 hover:text-white"
+              ? "bg-[#f1f1f1] text-[#0f0f0f] font-semibold"
+              : "bg-[#272727] text-[#aaaaaa] hover:text-[#f1f1f1] hover:bg-[#333333]"
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          All Categories ({services.length})
+          <span>All ({services.length})</span>
         </button>
 
         {PHOTOSHOOT_CATEGORIES.map((cat) => {
@@ -294,16 +289,16 @@ export default function AdminServicesPage() {
               key={cat}
               type="button"
               onClick={() => setSelectedCategoryTab(cat)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer whitespace-nowrap ${
                 active
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-                  : "bg-white/[0.03] border border-white/10 text-slate-400 hover:text-white"
+                  ? "bg-[#f1f1f1] text-[#0f0f0f] font-semibold"
+                  : "bg-[#272727] text-[#aaaaaa] hover:text-[#f1f1f1] hover:bg-[#333333]"
               }`}
             >
               <span>{cat}</span>
               <span
-                className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                  active ? "bg-white/20 text-white" : "bg-white/5 text-slate-400"
+                className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                  active ? "bg-black/20 text-[#0f0f0f]" : "bg-[#1a1a1a] text-[#717171]"
                 }`}
               >
                 {count}
@@ -315,46 +310,46 @@ export default function AdminServicesPage() {
 
       {/* Services Grid */}
       {isLoading ? (
-        <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-2">
-          <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
-          <p className="text-xs">Loading services &amp; categories...</p>
+        <div className="py-20 flex flex-col items-center justify-center text-[#aaaaaa] gap-2">
+          <Loader2 className="w-6 h-6 animate-spin text-[#aaaaaa]" />
+          <p className="text-xs">Loading packages...</p>
         </div>
       ) : filteredServices.length === 0 ? (
-        <div className="py-16 text-center text-slate-500 border border-dashed border-white/5 rounded-3xl">
-          <Camera className="w-10 h-10 mx-auto mb-2 opacity-40 text-slate-400" />
-          <p className="text-base font-semibold text-slate-300">
-            No packages configured in this category
+        <div className="py-16 text-center text-[#717171] bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl">
+          <Camera className="w-9 h-9 mx-auto mb-2 opacity-40 text-[#717171]" />
+          <p className="text-sm font-semibold text-[#aaaaaa]">
+            No packages in this category
           </p>
-          <p className="text-xs text-slate-500 mt-1">
-            Click &ldquo;Add New Package&rdquo; or &ldquo;Ensure All 5 Category Packages&rdquo; above.
+          <p className="text-xs text-[#717171] mt-0.5">
+            Click &ldquo;New Package&rdquo; or &ldquo;Sync Defaults&rdquo; above.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredServices.map((svc) => (
             <div
               key={svc.id}
-              className={`glass-panel p-6 rounded-3xl border transition-all flex flex-col justify-between ${
+              className={`bg-[#1a1a1a] p-5 rounded-2xl border transition-colors flex flex-col justify-between ${
                 svc.isActive
-                  ? "border-white/10 hover:border-indigo-500/30"
-                  : "border-white/5 opacity-60 bg-black/20"
+                  ? "border-[#2a2a2a] hover:border-[#383838]"
+                  : "border-[#222222] opacity-60 bg-[#141414]"
               }`}
             >
               <div>
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getCategoryBadgeClass(
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${getCategoryBadgeClass(
                         svc.category
                       )}`}
                     >
                       {svc.category || "Indoor Photoshoot"}
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider ${
                         svc.isActive
-                          ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-                          : "bg-slate-500/10 text-slate-400 border border-slate-500/20"
+                          ? "bg-[#0e2a1b] text-[#4ade80] border border-[#164e2d]"
+                          : "bg-[#272727] text-[#aaaaaa] border border-[#383838]"
                       }`}
                     >
                       {svc.isActive ? "Active" : "Inactive"}
@@ -366,7 +361,7 @@ export default function AdminServicesPage() {
                       type="button"
                       onClick={() => openEditModal(svc)}
                       title="Edit Package"
-                      className="p-1.5 rounded-lg border border-white/5 hover:bg-white/5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                      className="p-1.5 rounded-md border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#272727] text-[#aaaaaa] hover:text-[#f1f1f1] transition-colors cursor-pointer"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
@@ -374,43 +369,45 @@ export default function AdminServicesPage() {
                       type="button"
                       onClick={() => handleDelete(svc.id)}
                       title="Delete / Deactivate"
-                      className="p-1.5 rounded-lg border border-white/5 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-md border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#2e1414] text-[#aaaaaa] hover:text-[#f87171] transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
 
-                <h3 className="text-lg font-bold text-white mb-2">{svc.name}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed mb-6">
+                <h3 className="text-sm font-semibold text-[#f1f1f1] mb-1.5">
+                  {svc.name}
+                </h3>
+                <p className="text-xs text-[#aaaaaa] leading-relaxed mb-4">
                   {svc.description}
                 </p>
               </div>
 
-              <div className="pt-4 border-t border-white/5 space-y-2">
-                <div className="flex items-center justify-between text-xs text-slate-400">
+              <div className="pt-3.5 border-t border-[#252525] space-y-2">
+                <div className="flex items-center justify-between text-xs text-[#aaaaaa]">
                   <span className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                    <Clock className="w-3.5 h-3.5 text-[#717171]" />
                     Shoot Duration:
                   </span>
-                  <span className="font-semibold text-white">
+                  <span className="font-medium text-[#f1f1f1]">
                     {svc.durationMinutes} mins
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-xs text-slate-400">
+                <div className="flex items-center justify-between text-xs text-[#aaaaaa]">
                   <span className="flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-pink-400" />
+                    <Sliders className="w-3.5 h-3.5 text-[#717171]" />
                     Transit / Setup Buffer:
                   </span>
-                  <span className="font-semibold text-white">
+                  <span className="font-medium text-[#f1f1f1]">
                     +{svc.bufferMinutes} mins
                   </span>
                 </div>
-                <div className="pt-2 flex items-baseline justify-between border-t border-white/5">
-                  <span className="text-[11px] text-slate-500">
-                    Price (Malaysia Ringgit)
+                <div className="pt-2 flex items-baseline justify-between border-t border-[#252525]">
+                  <span className="text-[11px] text-[#717171]">
+                    Price (RM)
                   </span>
-                  <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-pink-300">
+                  <span className="text-base font-bold text-[#f1f1f1]">
                     {formatMYR(svc.price)}
                   </span>
                 </div>
@@ -422,30 +419,30 @@ export default function AdminServicesPage() {
 
       {/* Add / Edit Package Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="max-w-lg w-full glass-card p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+          <div className="max-w-lg w-full bg-[#1f1f1f] p-6 rounded-2xl border border-[#303030] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-base font-bold text-[#f1f1f1]">
               {editingService
-                ? "Edit Service Package & Buffer"
-                : "Create Service Package & Buffer"}
+                ? "Edit Service Package"
+                : "Create Service Package"}
             </h3>
 
             {formError && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+              <div className="p-3 rounded-xl bg-[#2e1414] border border-[#521c1c] text-[#fca5a5] text-xs">
                 {formError}
               </div>
             )}
 
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-3.5">
               {/* Category Selector */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1">
                   Photoshoot Category *
                 </label>
                 <select
                   value={category}
                   onChange={(e) => handleCategoryChangeInModal(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-[#121521] border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  className="w-full px-3.5 py-2.5 bg-[#121212] border border-[#2a2a2a] rounded-xl text-[#f1f1f1] text-xs focus:outline-none focus:border-[#3ea6ff]"
                 >
                   {PHOTOSHOOT_CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
@@ -453,13 +450,10 @@ export default function AdminServicesPage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Customers will select this category first before seeing this package.
-                </p>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1">
                   Package Title *
                 </label>
                 <input
@@ -468,12 +462,12 @@ export default function AdminServicesPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Studio Portrait & Headshots"
-                  className="w-full px-4 py-2.5 bg-white/[0.04] border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  className="w-full px-3.5 py-2.5 bg-[#121212] border border-[#2a2a2a] rounded-xl text-[#f1f1f1] text-xs focus:outline-none focus:border-[#3ea6ff]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1">
                   Description *
                 </label>
                 <textarea
@@ -482,13 +476,13 @@ export default function AdminServicesPage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Details of coverage, retouched images, backdrops or locations..."
-                  className="w-full px-4 py-2.5 bg-white/[0.04] border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  className="w-full px-3.5 py-2.5 bg-[#121212] border border-[#2a2a2a] rounded-xl text-[#f1f1f1] text-xs focus:outline-none focus:border-[#3ea6ff]"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1">
                     Price (RM) *
                   </label>
                   <input
@@ -498,12 +492,12 @@ export default function AdminServicesPage() {
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     placeholder="250.00"
-                    className="w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded-xl text-[#f1f1f1] text-xs focus:outline-none focus:border-[#3ea6ff]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1">
                     Duration (Min) *
                   </label>
                   <input
@@ -512,12 +506,12 @@ export default function AdminServicesPage() {
                     value={durationMinutes}
                     onChange={(e) => setDurationMinutes(e.target.value)}
                     placeholder="60"
-                    className="w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded-xl text-[#f1f1f1] text-xs focus:outline-none focus:border-[#3ea6ff]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1">
                     Buffer (Min) *
                   </label>
                   <input
@@ -526,23 +520,23 @@ export default function AdminServicesPage() {
                     value={bufferMinutes}
                     onChange={(e) => setBufferMinutes(e.target.value)}
                     placeholder="30"
-                    className="w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded-xl text-[#f1f1f1] text-xs focus:outline-none focus:border-[#3ea6ff]"
                   />
                 </div>
               </div>
 
               {/* Quick Buffer Presets */}
-              <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                <span className="text-slate-400 mr-1">Quick Buffer Preset:</span>
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px] pt-1">
+                <span className="text-[#717171] mr-1">Quick Presets:</span>
                 {[15, 20, 30, 45, 60, 90].map((m) => (
                   <button
                     key={m}
                     type="button"
                     onClick={() => setBufferMinutes(String(m))}
-                    className={`px-2 py-0.5 rounded-lg border transition cursor-pointer ${
+                    className={`px-2 py-0.5 rounded-full border text-[11px] transition cursor-pointer ${
                       Number(bufferMinutes) === m
-                        ? "bg-pink-500/20 border-pink-500/40 text-pink-300 font-bold"
-                        : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
+                        ? "bg-[#f1f1f1] text-[#0f0f0f] border-transparent font-semibold"
+                        : "bg-[#272727] border-[#383838] text-[#aaaaaa] hover:text-[#f1f1f1]"
                     }`}
                   >
                     +{m}m
@@ -556,29 +550,29 @@ export default function AdminServicesPage() {
                   id="isActive"
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
-                  className="rounded border-white/10 bg-white/5 text-indigo-600 focus:ring-indigo-500/50 w-4 h-4"
+                  className="rounded border-[#2a2a2a] bg-[#121212] text-[#cc0000] focus:ring-[#cc0000] w-4 h-4 cursor-pointer"
                 />
                 <label
                   htmlFor="isActive"
-                  className="text-xs text-slate-300 select-none cursor-pointer"
+                  className="text-xs text-[#aaaaaa] select-none cursor-pointer"
                 >
-                  Active (Display publicly under {category} on customer booking wizard)
+                  Active (Display publicly on customer booking site)
                 </label>
               </div>
 
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-white/5">
+              <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-[#2a2a2a]">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   disabled={isSubmitting}
-                  className="px-4 py-2.5 rounded-xl border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 text-xs font-semibold cursor-pointer"
+                  className="px-4 py-2 rounded-full border border-[#383838] text-[#aaaaaa] hover:text-[#f1f1f1] hover:bg-[#272727] text-xs font-medium cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#f1f1f1] hover:bg-white text-[#0f0f0f] text-xs font-semibold cursor-pointer disabled:opacity-50 transition-colors"
                 >
                   {isSubmitting ? (
                     <>

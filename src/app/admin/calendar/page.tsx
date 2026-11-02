@@ -89,15 +89,15 @@ type CalendarViewMode = "month" | "week" | "day" | "schedule";
 
 const CATEGORY_EVENT_STYLES: Record<string, string> = {
   "Indoor Photoshoot":
-    "bg-indigo-600/25 border-l-4 border-indigo-400 text-indigo-100 hover:bg-indigo-600/40",
+    "bg-[#272727] border-l-4 border-[#aaaaaa] text-[#f1f1f1] hover:bg-[#333333]",
   "Outdoor Photoshoot":
-    "bg-emerald-600/25 border-l-4 border-emerald-400 text-emerald-100 hover:bg-emerald-600/40",
+    "bg-[#16291e] border-l-4 border-[#4ade80] text-[#f1f1f1] hover:bg-[#1f3829]",
   Wedding:
-    "bg-pink-600/25 border-l-4 border-pink-400 text-pink-100 hover:bg-pink-600/40",
+    "bg-[#2e1823] border-l-4 border-[#f472b6] text-[#f1f1f1] hover:bg-[#3d202f]",
   Sport:
-    "bg-amber-600/25 border-l-4 border-amber-400 text-amber-100 hover:bg-amber-600/40",
+    "bg-[#2e1d13] border-l-4 border-[#fb923c] text-[#f1f1f1] hover:bg-[#3d2719]",
   Product:
-    "bg-cyan-600/25 border-l-4 border-cyan-400 text-cyan-100 hover:bg-cyan-600/40",
+    "bg-[#142330] border-l-4 border-[#38bdf8] text-[#f1f1f1] hover:bg-[#1c3042]",
 };
 
 function AdminCalendarView() {
@@ -377,18 +377,18 @@ function AdminCalendarView() {
 
   return (
     <div className="space-y-6">
-      {/* Top Google Calendar-Style Toolbar */}
-      <div className="glass-panel p-4 sm:p-6 rounded-3xl border border-white/10 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+      {/* Top Calendar Toolbar */}
+      <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-[#2a2a2a] flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-            <CalendarIcon className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-lg bg-[#cc0000] flex items-center justify-center text-white shrink-0">
+            <CalendarIcon className="w-4 h-4" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-              Studio Booking Calendar
+            <h1 className="text-xl font-bold text-[#f1f1f1] tracking-tight">
+              Calendar
             </h1>
-            <p className="text-xs text-slate-400">
-              Google Calendar view of all photoshoot appointments, categories, buffers &amp; client details
+            <p className="text-xs text-[#aaaaaa]">
+              Photoshoot schedule, bookings, buffer times &amp; availability
             </p>
           </div>
 
@@ -396,14 +396,14 @@ function AdminCalendarView() {
             <button
               type="button"
               onClick={handleToday}
-              className="px-3.5 py-2 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.03] hover:bg-white/10 text-xs font-bold text-white transition cursor-pointer"
+              className="px-3 py-1.5 rounded-full border border-[#2a2a2a] bg-[#272727] hover:bg-[#333333] text-xs font-medium text-[#f1f1f1] transition cursor-pointer"
             >
               Today
             </button>
             <button
               type="button"
               onClick={handlePrev}
-              className="p-2 rounded-xl border border-white/10 hover:bg-white/10 text-slate-300 hover:text-white transition cursor-pointer"
+              className="p-1.5 rounded-full border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#272727] text-[#aaaaaa] hover:text-[#f1f1f1] transition cursor-pointer"
               aria-label="Previous"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -411,12 +411,12 @@ function AdminCalendarView() {
             <button
               type="button"
               onClick={handleNext}
-              className="p-2 rounded-xl border border-white/10 hover:bg-white/10 text-slate-300 hover:text-white transition cursor-pointer"
+              className="p-1.5 rounded-full border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#272727] text-[#aaaaaa] hover:text-[#f1f1f1] transition cursor-pointer"
               aria-label="Next"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
-            <span className="text-sm sm:text-lg font-extrabold text-white px-2">
+            <span className="text-sm sm:text-base font-bold text-[#f1f1f1] px-2">
               {viewMode === "month" && format(currentDate, "MMMM yyyy")}
               {viewMode === "week" &&
                 `${format(weekDays[0], "dd MMM")} – ${format(
@@ -424,7 +424,7 @@ function AdminCalendarView() {
                   "dd MMM yyyy"
                 )}`}
               {viewMode === "day" && format(currentDate, "EEEE, dd MMMM yyyy")}
-              {viewMode === "schedule" && "Upcoming Schedule Agenda"}
+              {viewMode === "schedule" && "Schedule Agenda"}
             </span>
           </div>
         </div>
@@ -435,7 +435,7 @@ function AdminCalendarView() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-[#121521] border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500"
+            className="bg-[#121212] border border-[#2a2a2a] rounded-full px-3 py-1.5 text-xs font-medium text-[#f1f1f1] focus:outline-none focus:border-[#3ea6ff]"
           >
             <option value="ALL">All Categories</option>
             {PHOTOSHOOT_CATEGORIES.map((cat) => (
@@ -449,7 +449,7 @@ function AdminCalendarView() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-[#121521] border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500"
+            className="bg-[#121212] border border-[#2a2a2a] rounded-full px-3 py-1.5 text-xs font-medium text-[#f1f1f1] focus:outline-none focus:border-[#3ea6ff]"
           >
             <option value="ACTIVE">Active (Confirmed + Hold)</option>
             <option value="ALL">All Statuses</option>
@@ -459,7 +459,7 @@ function AdminCalendarView() {
           </select>
 
           {/* View Mode Switcher (Month / Week / Day / Schedule) */}
-          <div className="inline-flex rounded-xl bg-[#121521] p-1 border border-white/10">
+          <div className="inline-flex rounded-full bg-[#121212] p-1 border border-[#2a2a2a]">
             {(
               [
                 { id: "month", label: "Month" },
@@ -472,10 +472,10 @@ function AdminCalendarView() {
                 key={v.id}
                 type="button"
                 onClick={() => setViewMode(v.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                className={`px-3 py-1 rounded-full text-xs transition cursor-pointer ${
                   viewMode === v.id
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-[#f1f1f1] text-[#0f0f0f] font-semibold"
+                    : "text-[#aaaaaa] hover:text-[#f1f1f1]"
                 }`}
               >
                 {v.label}
@@ -512,30 +512,30 @@ function AdminCalendarView() {
         {/* Left Sidebar: Mini Month Jump + Category Color Key + Today's Summary */}
         <div className="lg:col-span-3 space-y-5">
           {/* Mini Month Navigator */}
-          <div className="glass-panel p-4 rounded-2xl border border-white/10">
+          <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-[#2a2a2a]">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-white">
+              <span className="text-xs font-bold text-[#f1f1f1]">
                 {format(currentDate, "MMMM yyyy")}
               </span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => setCurrentDate((d) => subMonths(d, 1))}
-                  className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
+                  className="p-1 rounded-full hover:bg-[#272727] text-[#aaaaaa] hover:text-[#f1f1f1] cursor-pointer"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
                 <button
                   type="button"
                   onClick={() => setCurrentDate((d) => addMonths(d, 1))}
-                  className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
+                  className="p-1 rounded-full hover:bg-[#272727] text-[#aaaaaa] hover:text-[#f1f1f1] cursor-pointer"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-7 text-center text-[10px] font-semibold text-slate-500 mb-1">
+            <div className="grid grid-cols-7 text-center text-[10px] font-semibold text-[#717171] mb-1">
               {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
                 <span key={i}>{d}</span>
               ))}
@@ -556,21 +556,21 @@ function AdminCalendarView() {
                       setCurrentDate(d);
                       if (viewMode === "month") setViewMode("day");
                     }}
-                    className={`h-7 rounded-lg text-[11px] font-semibold flex flex-col items-center justify-center relative transition cursor-pointer ${
+                    className={`h-7 rounded-lg text-[11px] font-medium flex flex-col items-center justify-center relative transition cursor-pointer ${
                       selected
-                        ? "bg-indigo-600 text-white shadow"
+                        ? "bg-[#f1f1f1] text-[#0f0f0f] font-semibold"
                         : todayFlag
-                        ? "border border-indigo-400 text-indigo-300"
+                        ? "border border-[#cc0000] text-[#ff4e4e]"
                         : inMonth
-                        ? "text-slate-300 hover:bg-white/10"
-                        : "text-slate-600"
+                        ? "text-[#aaaaaa] hover:bg-[#272727] hover:text-[#f1f1f1]"
+                        : "text-[#555555]"
                     }`}
                   >
                     <span>{format(d, "d")}</span>
                     {dayBookings.length > 0 && (
                       <span
                         className={`w-1 h-1 rounded-full ${
-                          selected ? "bg-white" : "bg-pink-400"
+                          selected ? "bg-[#0f0f0f]" : "bg-[#cc0000]"
                         }`}
                       />
                     )}
@@ -581,8 +581,8 @@ function AdminCalendarView() {
           </div>
 
           {/* Photoshoot Category Color Legend */}
-          <div className="glass-panel p-4 rounded-2xl border border-white/10 space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+          <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-[#2a2a2a] space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#aaaaaa] flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-indigo-400" />
               Categories &amp; Color Key
             </h3>
@@ -630,18 +630,18 @@ function AdminCalendarView() {
           </div>
 
           {/* Selected Day Quick Agenda */}
-          <div className="glass-panel p-4 rounded-2xl border border-white/10 space-y-3">
+          <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-[#2a2a2a] space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#aaaaaa]">
                 {format(currentDate, "EEE, dd MMM")} Bookings
               </h3>
-              <span className="text-xs font-bold text-indigo-400">
+              <span className="text-xs font-semibold text-[#f1f1f1]">
                 {getBookingsForDay(currentDate).length} sessions
               </span>
             </div>
 
             {getBookingsForDay(currentDate).length === 0 ? (
-              <p className="text-xs text-slate-500 py-4 text-center">
+              <p className="text-xs text-[#717171] py-4 text-center">
                 No bookings on this date.
               </p>
             ) : (
@@ -650,21 +650,21 @@ function AdminCalendarView() {
                   <div
                     key={b.id}
                     onClick={() => openBookingModal(b)}
-                    className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 cursor-pointer transition space-y-1"
+                    className="p-2.5 rounded-xl bg-[#202020] hover:bg-[#272727] border border-[#2a2a2a] cursor-pointer transition space-y-1"
                   >
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-bold text-white truncate">
+                      <span className="font-semibold text-[#f1f1f1] truncate">
                         {b.clientName}
                       </span>
-                      <span className="text-emerald-300 font-bold">
+                      <span className="text-[#4ade80] font-semibold">
                         {formatMYR(b.totalAmount)}
                       </span>
                     </div>
-                    <p className="text-[11px] text-indigo-300 truncate">
+                    <p className="text-[11px] text-[#aaaaaa] truncate">
                       {b.service.name}
                     </p>
-                    <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-slate-500" />
+                    <p className="text-[10px] text-[#717171] flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-[#717171]" />
                       {format(parseISO(b.startTime), "hh:mm a")} –{" "}
                       {format(parseISO(b.endTime), "hh:mm a")}
                     </p>
@@ -676,10 +676,10 @@ function AdminCalendarView() {
         </div>
 
         {/* Right Main Calendar Canvas */}
-        <div className="lg:col-span-9 glass-panel rounded-3xl border border-white/10 overflow-hidden">
+        <div className="lg:col-span-9 bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] overflow-hidden">
           {isLoading ? (
-            <div className="py-32 flex flex-col items-center justify-center text-slate-400 gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+            <div className="py-32 flex flex-col items-center justify-center text-[#aaaaaa] gap-2.5">
+              <Loader2 className="w-6 h-6 animate-spin text-[#aaaaaa]" />
               <p className="text-xs">Loading studio calendar events...</p>
             </div>
           ) : viewMode === "month" ? (
@@ -728,8 +728,8 @@ function AdminCalendarView() {
                           }}
                           className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center transition cursor-pointer ${
                             todayFlag
-                              ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/40"
-                              : "text-slate-300 hover:bg-white/10"
+                              ? "bg-[#cc0000] text-white font-bold"
+                              : "text-[#aaaaaa] hover:bg-[#272727] hover:text-[#f1f1f1]"
                           }`}
                         >
                           {format(day, "d")}
@@ -1084,41 +1084,41 @@ function AdminCalendarView() {
       {/* ================================================================= */}
       {selectedBooking && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
           onClick={() => setSelectedBooking(null)}
         >
           <div
-            className="max-w-xl w-full glass-card rounded-3xl border border-white/15 shadow-2xl overflow-hidden"
+            className="max-w-xl w-full bg-[#1f1f1f] rounded-2xl border border-[#303030] shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Top Colored Header Bar */}
-            <div className="p-6 bg-gradient-to-r from-indigo-950/80 via-indigo-900/40 to-slate-900 border-b border-white/10 flex items-start justify-between gap-4">
-              <div className="space-y-2">
+            {/* Top Header Bar */}
+            <div className="p-5 bg-[#252525] border-b border-[#2a2a2a] flex items-start justify-between gap-4">
+              <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getCategoryBadgeClass(
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${getCategoryBadgeClass(
                       selectedBooking.service?.category
                     )}`}
                   >
                     {selectedBooking.service?.category || "Indoor Photoshoot"}
                   </span>
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
                       selectedBooking.status === "CONFIRMED"
-                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                        ? "bg-[#0e2a1b] text-[#4ade80] border border-[#164e2d]"
                         : selectedBooking.status === "PENDING_PAYMENT"
-                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                        : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                        ? "bg-[#2a220e] text-[#facc15] border border-[#544315]"
+                        : "bg-[#2e1414] text-[#f87171] border border-[#521c1c]"
                     }`}
                   >
                     {selectedBooking.status.replace("_", " ")}
                   </span>
                 </div>
-                <h3 className="text-xl font-extrabold text-white">
+                <h3 className="text-lg font-bold text-[#f1f1f1]">
                   {selectedBooking.clientName} — {selectedBooking.service.name}
                 </h3>
-                <p className="text-xs text-slate-300 flex items-center gap-1.5">
-                  <CalendarIcon className="w-3.5 h-3.5 text-indigo-400" />
+                <p className="text-xs text-[#aaaaaa] flex items-center gap-1.5">
+                  <CalendarIcon className="w-3.5 h-3.5 text-[#aaaaaa]" />
                   {format(
                     parseISO(selectedBooking.startTime),
                     "EEEE, dd MMMM yyyy"
@@ -1129,7 +1129,7 @@ function AdminCalendarView() {
               <button
                 type="button"
                 onClick={() => setSelectedBooking(null)}
-                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition cursor-pointer"
+                className="p-1.5 rounded-full bg-[#1a1a1a] hover:bg-[#333333] text-[#aaaaaa] hover:text-[#f1f1f1] transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1168,62 +1168,62 @@ function AdminCalendarView() {
 
               {/* Time, Buffer & RM Price Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-indigo-400" />
+                <div className="p-3.5 rounded-xl bg-[#252525] border border-[#2a2a2a] space-y-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#aaaaaa] flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-[#aaaaaa]" />
                     Session &amp; Buffer Window
                   </span>
-                  <p className="text-sm font-bold text-white">
+                  <p className="text-sm font-semibold text-[#f1f1f1]">
                     {format(parseISO(selectedBooking.startTime), "hh:mm a")} –{" "}
                     {format(parseISO(selectedBooking.endTime), "hh:mm a")}
                   </p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-[#aaaaaa]">
                     {selectedBooking.service.durationMinutes}m shoot +{" "}
                     {selectedBooking.service.bufferMinutes}m buffer (locked until{" "}
                     {format(parseISO(selectedBooking.bufferEndTime), "hh:mm a")})
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                    <Sliders className="w-3 h-3 text-emerald-400" />
+                <div className="p-3.5 rounded-xl bg-[#252525] border border-[#2a2a2a] space-y-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#aaaaaa] flex items-center gap-1">
+                    <Sliders className="w-3 h-3 text-[#4ade80]" />
                     Package Fee (MYR)
                   </span>
-                  <p className="text-xl font-black text-emerald-400">
+                  <p className="text-lg font-bold text-[#4ade80]">
                     {formatMYR(selectedBooking.totalAmount)}
                   </p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-[#aaaaaa]">
                     Category: {selectedBooking.service.category || "Indoor Photoshoot"}
                   </p>
                 </div>
               </div>
 
               {/* Client Information */}
-              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2.5 text-xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+              <div className="p-4 rounded-xl bg-[#252525] border border-[#2a2a2a] space-y-2 text-xs">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#aaaaaa] block">
                   Customer Contact Details
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div className="flex items-center gap-2 text-slate-200">
-                    <User className="w-4 h-4 text-slate-500" />
-                    <span className="font-semibold">
+                  <div className="flex items-center gap-2 text-[#f1f1f1]">
+                    <User className="w-4 h-4 text-[#717171]" />
+                    <span className="font-medium">
                       {selectedBooking.clientName}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-200">
-                    <Phone className="w-4 h-4 text-slate-500" />
+                  <div className="flex items-center gap-2 text-[#f1f1f1]">
+                    <Phone className="w-4 h-4 text-[#717171]" />
                     <span className="font-mono">
                       {selectedBooking.clientPhone}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-200 sm:col-span-2">
-                    <Mail className="w-4 h-4 text-slate-500" />
+                  <div className="flex items-center gap-2 text-[#aaaaaa] sm:col-span-2">
+                    <Mail className="w-4 h-4 text-[#717171]" />
                     <span>{selectedBooking.clientEmail}</span>
                   </div>
                 </div>
                 {selectedBooking.notes && (
-                  <div className="pt-2 border-t border-white/5 flex items-start gap-2 text-slate-300">
-                    <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+                  <div className="pt-2 border-t border-[#333333] flex items-start gap-2 text-[#aaaaaa]">
+                    <FileText className="w-3.5 h-3.5 text-[#717171] shrink-0 mt-0.5" />
                     <span className="italic">{selectedBooking.notes}</span>
                   </div>
                 )}
@@ -1331,7 +1331,7 @@ function AdminCalendarView() {
               </div>
 
               {/* Footer Status Controls */}
-              <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
+              <div className="pt-3 border-t border-[#2a2a2a] flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   {selectedBooking.status === "PENDING_PAYMENT" && (
                     <button
@@ -1340,7 +1340,7 @@ function AdminCalendarView() {
                       onClick={() =>
                         handleStatusUpdate(selectedBooking.id, "CONFIRMED")
                       }
-                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-full bg-[#0e2a1b] hover:bg-[#164e2d] border border-[#164e2d] text-[#4ade80] text-xs font-semibold cursor-pointer transition-colors"
                     >
                       Confirm Booking
                     </button>
@@ -1349,7 +1349,7 @@ function AdminCalendarView() {
                     <button
                       type="button"
                       onClick={() => setRescheduleMode(!rescheduleMode)}
-                      className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-semibold cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-full bg-[#272727] hover:bg-[#333333] border border-[#383838] text-[#f1f1f1] text-xs font-medium cursor-pointer transition-colors"
                     >
                       {rescheduleMode ? "Hide Reschedule" : "Reschedule"}
                     </button>
@@ -1361,7 +1361,7 @@ function AdminCalendarView() {
                       onClick={() =>
                         handleStatusUpdate(selectedBooking.id, "CANCELLED")
                       }
-                      className="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-semibold cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-full bg-[#2e1414] hover:bg-[#441c1c] border border-[#521c1c] text-[#f87171] text-xs font-medium cursor-pointer transition-colors"
                     >
                       Cancel Booking
                     </button>
@@ -1371,7 +1371,7 @@ function AdminCalendarView() {
                 <button
                   type="button"
                   onClick={() => setSelectedBooking(null)}
-                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
+                  className="px-4 py-1.5 rounded-full border border-[#383838] bg-[#272727] hover:bg-[#333333] text-[#aaaaaa] hover:text-[#f1f1f1] text-xs font-medium cursor-pointer transition-colors"
                 >
                   Close
                 </button>

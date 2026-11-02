@@ -19,7 +19,6 @@ import {
   User,
   Shield,
   Loader2,
-  Sparkles,
   Settings,
   Phone,
   Mail,
@@ -301,17 +300,16 @@ export default function AdminNotificationsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-3">
-            <Bell className="w-7 h-7 text-indigo-400" />
-            Notification Center
+          <h1 className="text-xl sm:text-2xl font-bold text-[#f1f1f1] tracking-tight flex items-center gap-2.5">
+            <span>Notifications</span>
             {stats.unreadCount > 0 && (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30">
-                {stats.unreadCount} New
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#cc0000] text-white">
+                {stats.unreadCount} new
               </span>
             )}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Monitor and dispatch real-time WhatsApp booking alerts for both Customers and Studio Admin.
+          <p className="text-xs text-[#aaaaaa] mt-0.5">
+            Activity and alerts for booking confirmations, reminders, and team notifications.
           </p>
         </div>
 
@@ -320,9 +318,9 @@ export default function AdminNotificationsPage() {
             <button
               type="button"
               onClick={handleMarkAllRead}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#272727] text-[#f1f1f1] text-xs font-medium transition cursor-pointer"
             >
-              <CheckCheck className="w-3.5 h-3.5" />
+              <CheckCheck className="w-3.5 h-3.5 text-[#aaaaaa]" />
               Mark All Read
             </button>
           )}
@@ -330,16 +328,16 @@ export default function AdminNotificationsPage() {
             type="button"
             onClick={() => loadNotifications(true)}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-slate-300 hover:text-white text-xs font-semibold transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#272727] text-[#f1f1f1] text-xs font-medium transition cursor-pointer"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-[#aaaaaa] ${isRefreshing ? "animate-spin" : ""}`} />
             Refresh
           </button>
           {notifications.length > 0 && (
             <button
               type="button"
               onClick={handleClearAll}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-rose-500/20 hover:bg-rose-500/10 text-rose-300 text-xs font-semibold transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#521c1c] bg-[#2e1414] hover:bg-[#3e1b1b] text-[#f87171] text-xs font-medium transition cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Clear Logs
@@ -350,77 +348,77 @@ export default function AdminNotificationsPage() {
 
       {/* 4 Summary Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card p-5 rounded-2xl border border-white/10">
+        <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-[#2a2a2a]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider">
               Unread Alerts
             </span>
-            <div className="w-8 h-8 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center">
-              <Bell className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-[#272727] text-[#ff4e4e] flex items-center justify-center">
+              <Bell className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-3xl font-black text-white">{stats.unreadCount}</div>
-          <p className="text-[11px] text-slate-500 mt-1">
+          <div className="text-2xl font-bold text-[#f1f1f1]">{stats.unreadCount}</div>
+          <p className="text-[11px] text-[#717171] mt-1">
             {stats.total} total notifications recorded
           </p>
         </div>
 
-        <div className="glass-card p-5 rounded-2xl border border-white/10">
+        <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-[#2a2a2a]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider">
               Admin WhatsApp Alerts
             </span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-              <Shield className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-[#272727] text-[#f1f1f1] flex items-center justify-center">
+              <Shield className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-3xl font-black text-white">{stats.adminAlertsCount}</div>
-          <p className="text-[11px] text-slate-500 mt-1">
+          <div className="text-2xl font-bold text-[#f1f1f1]">{stats.adminAlertsCount}</div>
+          <p className="text-[11px] text-[#717171] mt-1">
             Alerts when bookings are received
           </p>
         </div>
 
-        <div className="glass-card p-5 rounded-2xl border border-white/10">
+        <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-[#2a2a2a]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider">
               Customer WhatsApp Alerts
             </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <User className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-[#272727] text-[#4ade80] flex items-center justify-center">
+              <User className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-3xl font-black text-white">{stats.customerAlertsCount}</div>
-          <p className="text-[11px] text-slate-500 mt-1">
+          <div className="text-2xl font-bold text-[#f1f1f1]">{stats.customerAlertsCount}</div>
+          <p className="text-[11px] text-[#717171] mt-1">
             Confirmations sent to customers
           </p>
         </div>
 
-        <div className="glass-card p-5 rounded-2xl border border-white/10">
+        <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-[#2a2a2a]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider">
               Channels (Option D)
             </span>
-            <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center">
-              <Send className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-[#272727] text-[#38bdf8] flex items-center justify-center">
+              <Send className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${alertChannels?.telegramConfigured ? "bg-emerald-400" : "bg-amber-400"}`} />
-              <span className="text-xs font-semibold text-white">
+              <span className={`w-2 h-2 rounded-full ${alertChannels?.telegramConfigured ? "bg-[#4ade80]" : "bg-[#facc15]"}`} />
+              <span className="text-xs font-semibold text-[#f1f1f1]">
                 Telegram: {alertChannels?.telegramConfigured ? "Connected" : "Setup Required"}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${alertChannels?.emailConfigured ? "bg-emerald-400" : "bg-slate-500"}`} />
-              <span className="text-xs font-semibold text-slate-300">
+              <span className={`w-2 h-2 rounded-full ${alertChannels?.emailConfigured ? "bg-[#4ade80]" : "bg-[#717171]"}`} />
+              <span className="text-xs font-semibold text-[#aaaaaa]">
                 Email: {alertChannels?.emailConfigured ? "Resend Active" : "1-Click WA Active"}
               </span>
             </div>
           </div>
           <Link
             href="/admin/profile?tab=alerts"
-            className="text-[11px] text-sky-400 hover:underline mt-2 inline-flex items-center gap-1"
+            className="text-[11px] text-[#3ea6ff] hover:underline mt-2 inline-flex items-center gap-1"
           >
             <Settings className="w-3 h-3" />
             Manage Telegram &amp; Email Alerts
@@ -429,15 +427,15 @@ export default function AdminNotificationsPage() {
       </div>
 
       {/* Quick Booking WhatsApp Dispatcher Card */}
-      <div className="glass-panel p-5 sm:p-6 rounded-3xl border border-emerald-500/20 bg-gradient-to-r from-emerald-950/20 via-slate-900/60 to-indigo-950/20 space-y-4">
+      <div className="bg-[#1a1a1a] p-5 rounded-2xl border border-[#2a2a2a] space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#272727] text-[#4ade80] flex items-center justify-center">
               <Send className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-white">
-                Instant Booking WhatsApp Dispatcher (Customer &amp; Admin)
+              <h2 className="text-sm sm:text-base font-bold text-[#f1f1f1]">
+                Manual WhatsApp Dispatcher (Customer &amp; Admin)
               </h2>
               <p className="text-xs text-slate-400">
                 Manually trigger or re-send formatted WhatsApp notifications (in RM) to the customer, admin, or both.
@@ -565,44 +563,47 @@ export default function AdminNotificationsPage() {
       </div>
 
       {/* Filters & Search Bar */}
-      <div className="glass-card p-4 rounded-2xl border border-white/10 flex flex-col lg:flex-row items-center gap-3">
+      <div className="bg-[#1a1a1a] p-3.5 rounded-2xl border border-[#2a2a2a] flex flex-col lg:flex-row items-center gap-3">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+          <Search className="w-4 h-4 text-[#717171] absolute left-3.5 top-2.5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search notifications by phone number, client name, package, or message..."
-            className="w-full pl-10 pr-4 py-2 bg-white/[0.03] border border-white/10 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            placeholder="Search by phone, client name, package, or message..."
+            className="w-full pl-10 pr-4 py-2 bg-[#121212] border border-[#2a2a2a] rounded-full text-xs text-[#f1f1f1] placeholder-[#717171] focus:outline-none focus:border-[#3ea6ff]"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           {/* Role Filter */}
-          {(["ALL", "ADMIN", "CUSTOMER"] as const).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setRoleFilter(r)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-                roleFilter === r
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white/[0.03] border border-white/5 text-slate-400 hover:text-white"
-              }`}
-            >
-              {r === "ALL"
-                ? "All Recipients"
-                : r === "ADMIN"
-                ? "Admin Alerts"
-                : "Customer Alerts"}
-            </button>
-          ))}
+          {(["ALL", "ADMIN", "CUSTOMER"] as const).map((r) => {
+            const active = roleFilter === r;
+            return (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRoleFilter(r)}
+                className={`px-3 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap ${
+                  active
+                    ? "bg-[#f1f1f1] text-[#0f0f0f] font-semibold"
+                    : "bg-[#272727] text-[#aaaaaa] hover:text-[#f1f1f1] hover:bg-[#333333]"
+                }`}
+              >
+                {r === "ALL"
+                  ? "All"
+                  : r === "ADMIN"
+                  ? "Admin"
+                  : "Customer"}
+              </button>
+            );
+          })}
 
           {/* Channel Filter */}
           <select
             value={channelFilter}
             onChange={(e) => setChannelFilter(e.target.value)}
-            className="bg-[#121521] border border-white/10 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-200"
+            className="bg-[#121212] border border-[#2a2a2a] rounded-full px-3 py-1.5 text-xs font-medium text-[#f1f1f1] focus:outline-none focus:border-[#3ea6ff]"
           >
             <option value="ALL">All Channels</option>
             <option value="TELEGRAM">Telegram</option>
@@ -615,7 +616,7 @@ export default function AdminNotificationsPage() {
           <select
             value={eventFilter}
             onChange={(e) => setEventFilter(e.target.value)}
-            className="bg-[#121521] border border-white/10 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-200"
+            className="bg-[#121212] border border-[#2a2a2a] rounded-full px-3 py-1.5 text-xs font-medium text-[#f1f1f1] focus:outline-none focus:border-[#3ea6ff]"
           >
             <option value="ALL">All Events</option>
             <option value="BOOKING_CREATED">New Booking Hold</option>
@@ -630,16 +631,16 @@ export default function AdminNotificationsPage() {
       {/* Notifications List */}
       <div className="space-y-3">
         {isLoading ? (
-          <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3 glass-panel rounded-3xl border border-white/10">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
-            <p className="text-xs">Loading notification activity...</p>
+          <div className="py-20 flex flex-col items-center justify-center text-[#aaaaaa] gap-2 bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a]">
+            <Loader2 className="w-6 h-6 animate-spin text-[#aaaaaa]" />
+            <p className="text-xs">Loading activity...</p>
           </div>
         ) : notifications.length === 0 ? (
-          <div className="py-16 text-center text-slate-400 glass-panel rounded-3xl border border-white/10 p-8">
-            <Bell className="w-10 h-10 text-slate-500 mx-auto mb-3 opacity-50" />
-            <p className="text-base font-bold text-white">No notifications found</p>
-            <p className="text-xs text-slate-500 mt-1">
-              When a customer books a photoshoot or when you send a WhatsApp alert above, notifications will appear here in real time.
+          <div className="py-16 text-center text-[#717171] bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] p-8">
+            <Bell className="w-9 h-9 text-[#717171] mx-auto mb-2 opacity-50" />
+            <p className="text-sm font-semibold text-[#aaaaaa]">No notifications found</p>
+            <p className="text-xs text-[#717171] mt-0.5">
+              When bookings are made or alerts dispatched, they appear here.
             </p>
           </div>
         ) : (
@@ -656,10 +657,10 @@ export default function AdminNotificationsPage() {
             return (
               <div
                 key={n.id}
-                className={`glass-panel p-5 rounded-2xl border transition-all ${
+                className={`p-4 rounded-xl border transition-colors ${
                   !n.isRead
-                    ? "border-indigo-500/40 bg-indigo-950/15 shadow-lg shadow-indigo-500/5"
-                    : "border-white/10 bg-white/[0.01]"
+                    ? "border-[#383838] bg-[#222222]"
+                    : "border-[#2a2a2a] bg-[#1a1a1a]"
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -775,8 +776,8 @@ export default function AdminNotificationsPage() {
                     </pre>
 
                     {meta?.deliveryNote && (
-                      <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                        <Sparkles className="w-3 h-3 text-indigo-400" />
+                      <p className="text-[11px] text-[#aaaaaa] flex items-center gap-1.5">
+                        <Clock className="w-3 h-3 text-[#717171]" />
                         {meta.deliveryNote}
                       </p>
                     )}

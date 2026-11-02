@@ -129,7 +129,6 @@ export default function AdminBookingsPage() {
         throw new Error(data.error || "Failed to update booking status");
       }
 
-      // Update local state
       setBookings((prev) =>
         prev.map((b) => (b.id === bookingId ? data.booking : b))
       );
@@ -174,222 +173,232 @@ export default function AdminBookingsPage() {
     }
   };
 
+  const filteredBookings = bookings.filter(
+    (b) =>
+      categoryFilter === "ALL" ||
+      (b.service.category || "Indoor Photoshoot") === categoryFilter
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-            Bookings Management
+          <h1 className="text-xl sm:text-2xl font-bold text-[#f1f1f1] tracking-tight">
+            Bookings
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Search, filter, confirm, reschedule, or cancel all customer sessions.
+          <p className="text-xs text-[#aaaaaa] mt-0.5">
+            Manage, confirm, and update customer shoot sessions.
           </p>
         </div>
 
         <button
           type="button"
           onClick={handleRefresh}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/5 text-slate-300 hover:text-white text-xs font-semibold transition-all self-start sm:self-center cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#272727] text-[#f1f1f1] text-xs font-medium transition-colors cursor-pointer self-start sm:self-center"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Refresh
+          <RefreshCw className="w-3.5 h-3.5 text-[#aaaaaa]" />
+          <span>Refresh</span>
         </button>
       </div>
 
-      {/* Global Action Error Alert */}
+      {/* Action Error Alert */}
       {actionError && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+        <div className="p-3.5 rounded-xl bg-[#2e1414] border border-[#521c1c] text-[#fca5a5] text-xs flex items-center gap-3">
+          <AlertCircle className="w-4 h-4 text-[#f87171] shrink-0" />
           <span>{actionError}</span>
         </div>
       )}
 
-      {/* Search and Filters Bar */}
-      <div className="glass-card p-4 rounded-2xl border border-white/10 flex flex-col md:flex-row items-center gap-4">
-        {/* Search Input */}
-        <div className="relative flex-1 w-full">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-            <Search className="w-4 h-4" />
+      {/* Filters Bar */}
+      <div className="bg-[#1a1a1a] p-3.5 rounded-2xl border border-[#2a2a2a] space-y-3">
+        <div className="flex flex-col md:flex-row items-center gap-3">
+          {/* Search Input */}
+          <div className="relative flex-1 w-full">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#717171]">
+              <Search className="w-4 h-4" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by client name, email, or phone number..."
+              className="w-full pl-10 pr-4 py-2 bg-[#121212] border border-[#2a2a2a] rounded-full text-[#f1f1f1] placeholder-[#717171] text-xs focus:outline-none focus:border-[#3ea6ff]"
+            />
           </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by client name, email, or phone number..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-          />
+
+          {/* Category Dropdown */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="bg-[#121212] border border-[#2a2a2a] rounded-full px-4 py-2 text-xs font-medium text-[#f1f1f1] focus:outline-none focus:border-[#3ea6ff] w-full md:w-auto"
+          >
+            <option value="ALL">All Categories</option>
+            {PHOTOSHOOT_CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Category Filter */}
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="bg-[#121521] border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500 w-full md:w-auto"
-        >
-          <option value="ALL">All Categories</option>
-          {PHOTOSHOOT_CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-
-        {/* Status Filter Buttons */}
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-          {["ALL", "CONFIRMED", "PENDING_PAYMENT", "CANCELLED"].map((st) => (
-            <button
-              key={st}
-              type="button"
-              onClick={() => setStatusFilter(st)}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                statusFilter === st
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                  : "bg-white/[0.02] border border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              {st === "ALL" ? "All Bookings" : st.replace("_", " ")}
-            </button>
-          ))}
+        {/* Status Filter Chips */}
+        <div className="flex items-center gap-2 overflow-x-auto pt-1 no-scrollbar">
+          {[
+            { id: "ALL", label: "All Bookings" },
+            { id: "CONFIRMED", label: "Confirmed" },
+            { id: "PENDING_PAYMENT", label: "Pending" },
+            { id: "CANCELLED", label: "Cancelled" },
+          ].map((st) => {
+            const active = statusFilter === st.id;
+            return (
+              <button
+                key={st.id}
+                type="button"
+                onClick={() => setStatusFilter(st.id)}
+                className={`px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer whitespace-nowrap ${
+                  active
+                    ? "bg-[#f1f1f1] text-[#0f0f0f] font-semibold"
+                    : "bg-[#272727] text-[#aaaaaa] hover:text-[#f1f1f1] hover:bg-[#333333]"
+                }`}
+              >
+                {st.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Bookings Table */}
-      <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden">
+      {/* Bookings Table Panel */}
+      <div className="bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a] overflow-hidden">
         {isLoading ? (
-          <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
-            <p className="text-xs">Loading bookings data...</p>
+          <div className="py-20 flex flex-col items-center justify-center text-[#aaaaaa] gap-2.5">
+            <Loader2 className="w-6 h-6 animate-spin text-[#aaaaaa]" />
+            <p className="text-xs">Loading bookings...</p>
           </div>
-        ) : bookings.length === 0 ? (
-          <div className="py-16 text-center text-slate-500">
-            <CalendarIcon className="w-10 h-10 mx-auto mb-2 opacity-40 text-slate-400" />
-            <p className="text-base font-semibold text-slate-300">No bookings found</p>
-            <p className="text-xs text-slate-500 mt-1">
-              Try adjusting your search query or status filter.
+        ) : filteredBookings.length === 0 ? (
+          <div className="py-16 text-center text-[#717171]">
+            <CalendarIcon className="w-9 h-9 mx-auto mb-2 opacity-40 text-[#717171]" />
+            <p className="text-sm font-semibold text-[#aaaaaa]">No bookings found</p>
+            <p className="text-xs text-[#717171] mt-0.5">
+              Try adjusting your search query or filter.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="text-[11px] uppercase tracking-wider text-slate-500 bg-white/[0.01] border-b border-white/5">
+              <thead className="text-[11px] font-semibold uppercase tracking-wider text-[#717171] bg-[#141414] border-b border-[#2a2a2a]">
                 <tr>
-                  <th className="py-3.5 px-4">Client</th>
-                  <th className="py-3.5 px-4">Package</th>
-                  <th className="py-3.5 px-4">Scheduled Window</th>
-                  <th className="py-3.5 px-4">Amount</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+                  <th className="py-3 px-4">Client</th>
+                  <th className="py-3 px-4">Package</th>
+                  <th className="py-3 px-4">Scheduled Window</th>
+                  <th className="py-3 px-4">Amount</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
-                {bookings
-                  .filter(
-                    (b) =>
-                      categoryFilter === "ALL" ||
-                      (b.service.category || "Indoor Photoshoot") ===
-                        categoryFilter
-                  )
-                  .map((b) => (
-                  <tr key={b.id} className="hover:bg-white/[0.02] transition-colors">
+              <tbody className="divide-y divide-[#222222]">
+                {filteredBookings.map((b) => (
+                  <tr key={b.id} className="hover:bg-[#202020] transition-colors">
                     {/* Client */}
-                    <td className="py-4 px-4">
-                      <span className="font-bold text-white block text-sm">{b.clientName}</span>
-                      <div className="text-slate-400 text-xs flex items-center gap-1.5 mt-0.5">
-                        <Mail className="w-3 h-3 text-slate-500" />
+                    <td className="py-3.5 px-4">
+                      <span className="font-semibold text-[#f1f1f1] block text-xs">
+                        {b.clientName}
+                      </span>
+                      <div className="text-[#aaaaaa] text-[11px] flex items-center gap-1.5 mt-0.5">
+                        <Mail className="w-3 h-3 text-[#717171]" />
                         <span>{b.clientEmail}</span>
                       </div>
-                      <div className="text-slate-400 text-xs flex items-center gap-1.5 mt-0.5">
-                        <Phone className="w-3 h-3 text-slate-500" />
+                      <div className="text-[#aaaaaa] text-[11px] flex items-center gap-1.5 mt-0.5">
+                        <Phone className="w-3 h-3 text-[#717171]" />
                         <span>{b.clientPhone}</span>
                       </div>
                     </td>
 
                     {/* Package */}
-                    <td className="py-4 px-4">
+                    <td className="py-3.5 px-4">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border mb-1 ${getCategoryBadgeClass(
+                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium border mb-1 ${getCategoryBadgeClass(
                           b.service.category
                         )}`}
                       >
                         {b.service.category || "Indoor Photoshoot"}
                       </span>
-                      <span className="font-bold text-indigo-300 block text-xs">
+                      <span className="font-medium text-[#f1f1f1] block text-xs">
                         {b.service.name}
                       </span>
-                      <span className="text-slate-500 text-[11px]">
+                      <span className="text-[#717171] text-[11px]">
                         {b.service.durationMinutes}m shoot + {b.service.bufferMinutes ?? 30}m buffer
                       </span>
                       {b.notes && (
-                        <p className="text-slate-400 italic text-[11px] mt-1 max-w-xs truncate">
+                        <p className="text-[#aaaaaa] italic text-[11px] mt-1 max-w-xs truncate">
                           &quot;{b.notes}&quot;
                         </p>
                       )}
                     </td>
 
                     {/* Time */}
-                    <td className="py-4 px-4">
-                      <span className="font-semibold text-white block">
+                    <td className="py-3.5 px-4">
+                      <span className="font-medium text-[#f1f1f1] block">
                         {format(parseISO(b.startTime), "EEEE, dd MMM yyyy")}
                       </span>
-                      <span className="text-slate-400 text-[11px] block mt-0.5">
+                      <span className="text-[#aaaaaa] text-[11px] block mt-0.5">
                         {format(parseISO(b.startTime), "hh:mm a")} -{" "}
                         {format(parseISO(b.endTime), "hh:mm a")}
                       </span>
                     </td>
 
                     {/* Amount */}
-                    <td className="py-4 px-4 font-bold text-white text-sm">
+                    <td className="py-3.5 px-4 font-semibold text-[#f1f1f1] text-xs">
                       {formatMYR(b.totalAmount)}
                     </td>
 
                     {/* Status */}
-                    <td className="py-4 px-4">
+                    <td className="py-3.5 px-4">
                       {b.status === "CONFIRMED" ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#0e2a1b] text-[#4ade80] border border-[#164e2d]">
                           <CheckCircle2 className="w-3 h-3" />
-                          CONFIRMED
+                          Confirmed
                         </span>
                       ) : b.status === "PENDING_PAYMENT" ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#2a220e] text-[#facc15] border border-[#544315]">
                           <Clock className="w-3 h-3" />
-                          PENDING
+                          Pending
                         </span>
                       ) : b.status === "CANCELLED" ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#2e1414] text-[#f87171] border border-[#521c1c]">
                           <XCircle className="w-3 h-3" />
-                          CANCELLED
+                          Cancelled
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#272727] text-[#aaaaaa] border border-[#383838]">
                           {b.status}
                         </span>
                       )}
                     </td>
 
                     {/* Actions */}
-                    <td className="py-4 px-4 text-right">
+                    <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        {/* Quick Confirm Button */}
+                        {/* Quick Confirm */}
                         {b.status === "PENDING_PAYMENT" && (
                           <button
                             type="button"
                             onClick={() => handleUpdateStatus(b.id, "CONFIRMED")}
                             title="Confirm Booking"
-                            className="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold cursor-pointer"
+                            className="px-2.5 py-1 rounded-md bg-[#0e2a1b] hover:bg-[#153f28] text-[#4ade80] border border-[#164e2d] text-[11px] font-medium transition-colors cursor-pointer"
                           >
                             Confirm
                           </button>
                         )}
 
-                        {/* Reschedule Button */}
+                        {/* Reschedule */}
                         {b.status !== "CANCELLED" && (
                           <button
                             type="button"
                             onClick={() => {
                               setRescheduleBooking(b);
                               const dt = new Date(b.startTime);
-                              // Format for datetime-local input: YYYY-MM-DDTHH:mm
                               const localStr = new Date(
                                 dt.getTime() - dt.getTimezoneOffset() * 60000
                               )
@@ -397,52 +406,52 @@ export default function AdminBookingsPage() {
                                 .slice(0, 16);
                               setNewDateTime(localStr);
                             }}
-                            className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold border border-white/10 cursor-pointer"
+                            className="px-2.5 py-1 rounded-md bg-[#272727] hover:bg-[#333333] text-[#f1f1f1] text-[11px] font-medium border border-[#383838] transition-colors cursor-pointer"
                           >
                             Reschedule
                           </button>
                         )}
 
-                        {/* Cancel Button */}
+                        {/* Cancel */}
                         {b.status !== "CANCELLED" && (
                           <button
                             type="button"
                             onClick={() => handleUpdateStatus(b.id, "CANCELLED")}
                             title="Cancel Booking"
-                            className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold cursor-pointer"
+                            className="px-2.5 py-1 rounded-md bg-[#2e1414] hover:bg-[#3e1b1b] text-[#f87171] border border-[#521c1c] text-[11px] font-medium transition-colors cursor-pointer"
                           >
                             Cancel
                           </button>
                         )}
 
-                        {/* 1-Click WhatsApp Client Message */}
+                        {/* WhatsApp Message */}
                         <a
-                          href={`https://wa.me/${b.clientPhone.replace(/[^\d]/g, "").replace(/^0/, "60")}?text=${encodeURIComponent(`Hi ${b.clientName}, this is regarding your EasyBook [${b.service.category || "Photoshoot"}] booking for ${b.service.name} (${formatMYR(b.totalAmount)})!`)}`}
+                          href={`https://wa.me/${b.clientPhone.replace(/[^\d]/g, "").replace(/^0/, "60")}?text=${encodeURIComponent(`Hi ${b.clientName}, this is regarding your photoshoot booking for ${b.service.name} (${formatMYR(b.totalAmount)})!`)}`}
                           target="_blank"
                           rel="noreferrer"
                           title="Message Client on WhatsApp"
-                          className="p-1.5 rounded-lg border border-white/5 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-400"
+                          className="p-1.5 rounded-md border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#272727] text-[#aaaaaa] hover:text-[#4ade80] transition-colors"
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
                         </a>
 
-                        {/* 1-Click Add to Google Calendar */}
+                        {/* Google Calendar */}
                         <a
                           href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Photoshoot: ${b.clientName} - ${b.service.name}`)}&dates=${new Date(b.startTime).toISOString().replace(/-|:|\.\d\d\d/g, "")}/${new Date(b.endTime).toISOString().replace(/-|:|\.\d\d\d/g, "")}&details=${encodeURIComponent(`Client: ${b.clientName}\nPhone: ${b.clientPhone}\nEmail: ${b.clientEmail}\nService: ${b.service.name}`)}`}
                           target="_blank"
                           rel="noreferrer"
                           title="Add to Google Calendar"
-                          className="p-1.5 rounded-lg border border-white/5 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400"
+                          className="p-1.5 rounded-md border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#272727] text-[#aaaaaa] hover:text-[#3ea6ff] transition-colors"
                         >
                           <CalendarIcon className="w-3.5 h-3.5" />
                         </a>
 
-                        {/* Guest Manage Token Link */}
+                        {/* Client Portal Link */}
                         <Link
                           href={`/booking/manage/${b.manageToken}`}
                           target="_blank"
-                          title="Open Guest Management Portal"
-                          className="p-1.5 rounded-lg border border-white/5 hover:bg-white/5 text-slate-400 hover:text-white"
+                          title="Open Customer Management Portal"
+                          className="p-1.5 rounded-md border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#272727] text-[#aaaaaa] hover:text-[#f1f1f1] transition-colors"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </Link>
@@ -458,51 +467,51 @@ export default function AdminBookingsPage() {
 
       {/* Reschedule Modal */}
       {rescheduleBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="max-w-md w-full glass-card p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-white">Reschedule Appointment</h3>
-            <p className="text-xs text-slate-400">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+          <div className="max-w-md w-full bg-[#1f1f1f] p-6 rounded-2xl border border-[#303030] shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#f1f1f1]">Reschedule Session</h3>
+            <p className="text-xs text-[#aaaaaa]">
               Select a new start date & time for{" "}
-              <span className="text-white font-semibold">
+              <span className="text-[#f1f1f1] font-semibold">
                 {rescheduleBooking.clientName}
               </span>{" "}
               ({rescheduleBooking.service.name}).
             </p>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1.5">
                 New Start Date & Time
               </label>
               <input
                 type="datetime-local"
                 value={newDateTime}
                 onChange={(e) => setNewDateTime(e.target.value)}
-                className="w-full px-4 py-3 bg-white/[0.04] border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full px-3.5 py-2.5 bg-[#121212] border border-[#2a2a2a] rounded-xl text-[#f1f1f1] text-xs focus:outline-none focus:border-[#3ea6ff]"
               />
             </div>
 
-            <div className="pt-2 flex items-center justify-end gap-3">
+            <div className="pt-2 flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => setRescheduleBooking(null)}
                 disabled={isUpdating}
-                className="px-4 py-2.5 rounded-xl border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 rounded-full border border-[#383838] text-[#aaaaaa] hover:text-[#f1f1f1] hover:bg-[#272727] text-xs font-medium cursor-pointer transition-colors"
               >
-                Dismiss
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={handleRescheduleSubmit}
                 disabled={isUpdating}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#f1f1f1] hover:bg-white text-[#0f0f0f] text-xs font-semibold cursor-pointer disabled:opacity-50 transition-colors"
               >
                 {isUpdating ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Checking & Rescheduling...
+                    Rescheduling...
                   </>
                 ) : (
-                  "Confirm Reschedule"
+                  "Save Changes"
                 )}
               </button>
             </div>

@@ -26,8 +26,8 @@ export const CATEGORY_METADATA: Record<PhotoshootCategory, CategoryMeta> = {
     description:
       "Portraits, headshots, family graduation, and editorial fashion shoots inside our fully equipped studio.",
     defaultBufferMinutes: 30,
-    badgeColor: "bg-indigo-500/15 text-indigo-300 border-indigo-500/30",
-    accentGradient: "from-indigo-500 to-purple-500",
+    badgeColor: "bg-[#272727] text-[#f1f1f1] border-[#3a3a3a]",
+    accentGradient: "from-[#272727] to-[#1a1a1a]",
   },
   "Outdoor Photoshoot": {
     id: "Outdoor Photoshoot",
@@ -36,8 +36,8 @@ export const CATEGORY_METADATA: Record<PhotoshootCategory, CategoryMeta> = {
     description:
       "On-location lifestyle, convocation, couple, and urban/nature portraits with portable lighting.",
     defaultBufferMinutes: 45,
-    badgeColor: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-    accentGradient: "from-emerald-500 to-teal-500",
+    badgeColor: "bg-[#16291e] text-[#4ade80] border-[#20492e]",
+    accentGradient: "from-[#16291e] to-[#121212]",
   },
   Wedding: {
     id: "Wedding",
@@ -46,8 +46,8 @@ export const CATEGORY_METADATA: Record<PhotoshootCategory, CategoryMeta> = {
     description:
       "Intimate solemnization, pre-wedding storytelling, and full-day reception photography packages.",
     defaultBufferMinutes: 60,
-    badgeColor: "bg-pink-500/15 text-pink-300 border-pink-500/30",
-    accentGradient: "from-pink-500 to-rose-500",
+    badgeColor: "bg-[#2e1823] text-[#f472b6] border-[#4c2236]",
+    accentGradient: "from-[#2e1823] to-[#121212]",
   },
   Sport: {
     id: "Sport",
@@ -56,8 +56,8 @@ export const CATEGORY_METADATA: Record<PhotoshootCategory, CategoryMeta> = {
     description:
       "Dynamic athlete portraits, live match sideline coverage, and full sports club media day sessions.",
     defaultBufferMinutes: 45,
-    badgeColor: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    accentGradient: "from-amber-500 to-orange-500",
+    badgeColor: "bg-[#2e1d13] text-[#fb923c] border-[#4e2e1a]",
+    accentGradient: "from-[#2e1d13] to-[#121212]",
   },
   Product: {
     id: "Product",
@@ -66,8 +66,8 @@ export const CATEGORY_METADATA: Record<PhotoshootCategory, CategoryMeta> = {
     description:
       "High-precision studio lighting for e-commerce white background, creative flatlays, and commercial lookbooks.",
     defaultBufferMinutes: 25,
-    badgeColor: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
-    accentGradient: "from-cyan-500 to-blue-500",
+    badgeColor: "bg-[#142330] text-[#38bdf8] border-[#1d3d57]",
+    accentGradient: "from-[#142330] to-[#121212]",
   },
 };
 

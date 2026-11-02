@@ -178,31 +178,31 @@ export default function AdminAvailabilityPage() {
     <div className="space-y-10">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-          Operating Hours & Blackout Dates
+        <h1 className="text-xl sm:text-2xl font-bold text-[#f1f1f1] tracking-tight">
+          Operating Hours &amp; Blackout Dates
         </h1>
-        <p className="text-xs sm:text-sm text-slate-400 mt-1">
-          Manage your weekly studio schedule and block out holidays, personal days, or off-site events.
+        <p className="text-xs text-[#aaaaaa] mt-0.5">
+          Manage weekly studio operating hours and scheduled closures.
         </p>
       </div>
 
       {isLoading ? (
-        <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-2">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+        <div className="py-20 flex flex-col items-center justify-center text-[#aaaaaa] gap-2">
+          <Loader2 className="w-6 h-6 animate-spin text-[#aaaaaa]" />
           <p className="text-xs">Loading availability settings...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column: Weekly Operating Hours */}
-          <div className="lg:col-span-7 glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-white/5">
+          <div className="lg:col-span-7 bg-[#1a1a1a] p-5 sm:p-6 rounded-2xl border border-[#2a2a2a] space-y-5">
+            <div className="flex items-center justify-between pb-4 border-b border-[#2a2a2a]">
               <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-indigo-400" />
+                <h2 className="text-sm font-semibold text-[#f1f1f1] flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#aaaaaa]" />
                   Weekly Operating Hours
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Dynamic slots are only generated during open hours.
+                <p className="text-xs text-[#717171] mt-0.5">
+                  Dynamic booking slots are generated during open hours.
                 </p>
               </div>
 
@@ -210,7 +210,7 @@ export default function AdminAvailabilityPage() {
                 type="button"
                 onClick={saveOperatingHours}
                 disabled={isSavingHours}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-semibold text-xs shadow-lg shadow-indigo-500/25 transition-all cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#f1f1f1] hover:bg-white text-[#0f0f0f] font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isSavingHours ? (
                   <>
@@ -318,13 +318,13 @@ export default function AdminAvailabilityPage() {
           {/* Right Column: Blackout Dates Manager */}
           <div className="lg:col-span-5 space-y-6">
             {/* Create Blackout Form */}
-            <div className="glass-panel p-6 sm:p-7 rounded-3xl border border-white/10 space-y-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4 text-pink-400" />
+            <div className="bg-[#1a1a1a] p-5 sm:p-6 rounded-2xl border border-[#2a2a2a] space-y-4">
+              <h2 className="text-sm font-semibold text-[#f1f1f1] flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-[#ff4e4e]" />
                 Add Blackout Window
               </h2>
-              <p className="text-xs text-slate-400">
-                Instantly disable slot reservations during studio maintenance or private events.
+              <p className="text-xs text-[#aaaaaa]">
+                Disable slot reservations during studio maintenance, holidays, or private sessions.
               </p>
 
               {blackoutError && (
@@ -343,50 +343,50 @@ export default function AdminAvailabilityPage() {
                     required
                     value={blackoutStart}
                     onChange={(e) => setBlackoutStart(e.target.value)}
-                    className="w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded-xl text-[#f1f1f1] text-xs focus:outline-none focus:border-[#3ea6ff]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                    End Date & Time *
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1">
+                    End Date &amp; Time *
                   </label>
                   <input
                     type="datetime-local"
                     required
                     value={blackoutEnd}
                     onChange={(e) => setBlackoutEnd(e.target.value)}
-                    className="w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded-xl text-[#f1f1f1] text-xs focus:outline-none focus:border-[#3ea6ff]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1">
                     Reason / Label (Optional)
                   </label>
                   <input
                     type="text"
                     value={blackoutReason}
                     onChange={(e) => setBlackoutReason(e.target.value)}
-                    placeholder="e.g. Studio Renovation, National Holiday"
-                    className="w-full px-3 py-2 bg-white/[0.04] border border-white/10 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    placeholder="e.g. Studio Maintenance, Off-Site Shoot"
+                    className="w-full px-3 py-2 bg-[#121212] border border-[#2a2a2a] rounded-xl text-[#f1f1f1] text-xs focus:outline-none focus:border-[#3ea6ff]"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isAddingBlackout}
-                  className="w-full py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-semibold text-xs shadow-lg shadow-pink-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full py-2 rounded-full bg-[#cc0000] hover:bg-[#b30000] text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   {isAddingBlackout ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Adding Blackout...
+                      Adding...
                     </>
                   ) : (
                     <>
                       <Plus className="w-3.5 h-3.5" />
-                      Create Blackout Window
+                      Add Blackout Window
                     </>
                   )}
                 </button>
@@ -394,27 +394,27 @@ export default function AdminAvailabilityPage() {
             </div>
 
             {/* List of Blackout Dates */}
-            <div className="glass-panel p-6 rounded-3xl border border-white/10 space-y-4">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+            <div className="bg-[#1a1a1a] p-5 rounded-2xl border border-[#2a2a2a] space-y-3">
+              <h3 className="text-xs font-semibold text-[#aaaaaa] uppercase tracking-wider">
                 Active Blackouts ({blackouts.length})
               </h3>
 
               {blackouts.length === 0 ? (
-                <p className="text-xs text-slate-500 italic py-4 text-center">
-                  No studio blackout dates currently active.
+                <p className="text-xs text-[#717171] py-4 text-center">
+                  No active blackout dates.
                 </p>
               ) : (
-                <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
                   {blackouts.map((b) => (
                     <div
                       key={b.id}
-                      className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between gap-3 text-xs"
+                      className="p-3 rounded-xl bg-[#202020] border border-[#2a2a2a] flex items-center justify-between gap-3 text-xs"
                     >
                       <div>
-                        <span className="font-semibold text-white block">
+                        <span className="font-medium text-[#f1f1f1] block">
                           {b.reason || "Studio Blackout"}
                         </span>
-                        <span className="text-[11px] text-slate-400 block mt-0.5">
+                        <span className="text-[11px] text-[#aaaaaa] block mt-0.5">
                           {format(parseISO(b.startTime), "dd MMM, hh:mm a")} -{" "}
                           {format(parseISO(b.endTime), "dd MMM, hh:mm a")}
                         </span>
@@ -423,7 +423,7 @@ export default function AdminAvailabilityPage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteBlackout(b.id)}
-                        className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-[#aaaaaa] hover:text-[#f87171] hover:bg-[#2e1414] rounded-lg transition-colors cursor-pointer"
                         title="Remove Blackout"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
