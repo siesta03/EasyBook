@@ -396,7 +396,7 @@ export default function AdminNotificationsPage() {
             </span>
           </div>
           <Link
-            href="/admin/profile"
+            href="/admin/profile?tab=whatsapp"
             className="text-[11px] text-indigo-400 hover:underline mt-1 inline-flex items-center gap-1"
           >
             <Settings className="w-3 h-3" />

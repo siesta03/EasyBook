@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   User,
   Mail,
@@ -217,6 +218,14 @@ export default function AdminProfilePage() {
 
         setEnvDefaults(data.systemEnvDefaults || null);
         setLogs(data.recentLogs || []);
+
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const tab = params.get("tab");
+          if (tab === "whatsapp" || tab === "calendar" || tab === "general" || tab === "logs") {
+            setActiveTab(tab);
+          }
+        }
 
         try {
           const bRes = await fetch("/api/admin/bookings");
@@ -478,7 +487,8 @@ export default function AdminProfilePage() {
     "easybook-calendar-service@easybook-studio.iam.gserviceaccount.com";
 
   const cleanWaNumber = whatsappNumber.replace(/[^\d]/g, "");
-  const callMeBotActivationUrl = `https://wa.me/34644205484?text=I%20allow%20callmebot%20to%20send%20me%20messages`;
+  const callMeBotActivationUrl1 = `https://wa.me/34644263377?text=I%20allow%20callmebot%20to%20send%20me%20messages`;
+  const callMeBotActivationUrl2 = `https://wa.me/34644205484?text=I%20allow%20callmebot%20to%20send%20me%20messages`;
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12">
@@ -703,50 +713,112 @@ export default function AdminProfilePage() {
                 </div>
               </div>
 
-              {/* CallMeBot 100% Free Setup Box */}
+              {/* WhatsApp Setup Guide & Options */}
               <div className="bg-gradient-to-br from-emerald-950/40 to-slate-900 border border-emerald-500/30 rounded-xl p-5 space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2 text-emerald-300 font-bold text-sm">
                     <Sparkles className="w-4 h-4 text-emerald-400" />
-                    <span>How to receive real WhatsApp messages on your phone in 30 seconds (100% Free):</span>
+                    <span>How WhatsApp Notifications Work in EasyBook (Choose Your Preferred Method):</span>
                   </div>
                   <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider">
-                    Recommended
+                    Guide &amp; Options
                   </span>
                 </div>
 
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  To send automated messages from this server to your phone without costly enterprise contracts, EasyBook integrates with <strong>CallMeBot</strong> (free personal WhatsApp gateway) and <strong>Fonnte</strong> (popular in Malaysia).
+                  EasyBook supports <strong>3 simple ways</strong> to send WhatsApp booking notifications. You can use free CallMeBot for admin phone alerts, use Fonnte for automatic customer+admin messaging, or use zero-setup 1-Click WhatsApp!
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                  <div className="bg-[#0b0e17] p-3.5 rounded-lg border border-emerald-500/20 space-y-2">
-                    <span className="font-bold text-emerald-400 block">Step 1: Activate CallMeBot on WhatsApp</span>
-                    <p className="text-slate-400 text-[11px]">
-                      From your phone ({whatsappNumber || "+60189779241"}), message CallMeBot on WhatsApp with text:
+                {/* 3 Choice Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                  {/* Option 1: 1-Click WhatsApp (Zero Setup) */}
+                  <div className="bg-[#0b0e17] p-3.5 rounded-lg border border-white/10 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white block">Option 1: 1-Click WhatsApp</span>
+                      <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-semibold">Zero Setup</span>
+                    </div>
+                    <p className="text-slate-400 text-[11px] leading-relaxed">
+                      No API key or bots required! In <strong>Notifications</strong> (<Link href="/admin/notifications" className="text-indigo-400 underline">here</Link>) and <strong>Calendar</strong>, every booking has a green <strong>&ldquo;Send via WhatsApp&rdquo;</strong> button that opens WhatsApp with customer receipt pre-typed.
                     </p>
-                    <code className="block bg-black/40 px-2 py-1 rounded text-emerald-300 font-mono text-[11px]">
-                      I allow callmebot to send me messages
-                    </code>
-                    <a
-                      href={callMeBotActivationUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold text-xs transition"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      Click to Message CallMeBot Bot Now
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
                   </div>
 
-                  <div className="bg-[#0b0e17] p-3.5 rounded-lg border border-emerald-500/20 space-y-2">
-                    <span className="font-bold text-emerald-400 block">Step 2: Paste the API Key you receive</span>
-                    <p className="text-slate-400 text-[11px]">
-                      CallMeBot will reply immediately with your personal API Key (e.g. <code>1234567</code>). Paste it into the input below and click &quot;Save Changes&quot;!
+                  {/* Option 2: CallMeBot (Free Admin Alerts) */}
+                  <div className="bg-[#0b0e17] p-3.5 rounded-lg border border-emerald-500/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-emerald-400 block">Option 2: CallMeBot Bot</span>
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-semibold">100% Free</span>
+                    </div>
+                    <p className="text-slate-400 text-[11px] leading-relaxed">
+                      Sends automated notifications to <strong>YOUR personal phone</strong> whenever a customer books or pays. Setup takes 30 seconds below.
                     </p>
-                    <div className="pt-1 text-[11px] text-slate-500">
-                      That&apos;s it! Every customer booking will now buzz directly on your phone.
+                  </div>
+
+                  {/* Option 3: Fonnte (Malaysia Gateway) */}
+                  <div className="bg-[#0b0e17] p-3.5 rounded-lg border border-white/10 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-amber-300 block">Option 3: Fonnte Gateway</span>
+                      <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-semibold">Full Auto</span>
+                    </div>
+                    <p className="text-slate-400 text-[11px] leading-relaxed">
+                      Popular in Malaysia (<a href="https://fonnte.com" target="_blank" rel="noreferrer" className="text-amber-400 underline">fonnte.com</a>). Link your WhatsApp via QR code to automatically send WhatsApp messages to <strong>BOTH Admin AND Customers</strong>!
+                    </p>
+                  </div>
+                </div>
+
+                {/* Detailed CallMeBot Step-by-Step Instructions */}
+                <div className="bg-[#090c14] border border-emerald-500/20 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
+                    <MessageSquare className="w-4 h-4 text-emerald-400" />
+                    <span>How to set up CallMeBot for Admin alerts (Step-by-Step):</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                    <div className="space-y-1.5">
+                      <span className="font-semibold text-slate-200 block text-[11px]">
+                        1. Send message to CallMeBot on WhatsApp:
+                      </span>
+                      <p className="text-slate-400 text-[11px]">
+                        From your WhatsApp ({whatsappNumber || "+60189779241"}), click the button below to message the bot:
+                      </p>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <a
+                          href={callMeBotActivationUrl1}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold text-xs transition"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          Message Bot #1 (+34 644 26 33 77)
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <a
+                          href={callMeBotActivationUrl2}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 rounded-lg font-semibold text-xs transition border border-white/10"
+                        >
+                          Backup Bot #2 (+34 644 20 54 84)
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                      <p className="text-slate-500 text-[10px] mt-1">
+                        Text to send: <code className="text-emerald-300 bg-black/40 px-1 py-0.5 rounded">I allow callmebot to send me messages</code>
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <span className="font-semibold text-slate-200 block text-[11px]">
+                        2. Copy the API Key you receive:
+                      </span>
+                      <p className="text-slate-400 text-[11px]">
+                        CallMeBot will reply within 30 seconds with your numeric key:
+                      </p>
+                      <div className="bg-black/40 p-2 rounded text-[11px] font-mono text-emerald-300 border border-emerald-500/20">
+                        &ldquo;API Activated. Your APIKEY is: <strong>123456</strong>&rdquo;
+                      </div>
+                      <p className="text-slate-400 text-[11px]">
+                        3. Paste that number in <strong>Gateway API Key</strong> below, then click <strong>Save Changes</strong> &amp; <strong>Send Test WhatsApp Alert</strong>!
+                      </p>
                     </div>
                   </div>
                 </div>

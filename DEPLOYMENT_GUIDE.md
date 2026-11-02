@@ -36,6 +36,8 @@ In **Vercel Dashboard -> Settings -> Environment Variables**, ensure the followi
 | `WHATSAPP_API_PROVIDER` | Optional | `META` / `FONNTE` / `TWILIO` / `WEBHOOK` | Optional automated WhatsApp API provider (defaults to simulation + 1-Click `wa.me` links in `/admin/notifications`) |
 | `WHATSAPP_API_TOKEN` | Optional | `your-api-token` | API token for automated WhatsApp dispatching |
 
+> **WhatsApp Setup**: For step-by-step setup guides (1-Click WhatsApp, CallMeBot, and Fonnte), see [WHATSAPP_SETUP_GUIDE.md](file:///c:/Users/gmdby/EasyBook/WHATSAPP_SETUP_GUIDE.md).
+
 ---
 
 ## 4. Database Schema & Seed Data (`RM` Categories)
