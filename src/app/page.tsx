@@ -62,7 +62,7 @@ const clientDetailsSchema = z.object({
   clientEmail: z.string().email("Please enter a valid email address"),
   clientPhone: z
     .string()
-    .min(8, "Please enter a valid WhatsApp or contact phone number"),
+    .min(8, "Please enter a valid contact phone number"),
   notes: z.string().optional(),
 });
 
@@ -293,7 +293,7 @@ function BookingWizard() {
             Book Your Photoshoot
           </h1>
           <p className="text-slate-400 text-sm sm:text-base">
-            Select your photoshoot category, choose a tailored package, and reserve your slot instantly with WhatsApp &amp; Google Calendar confirmation.
+            Select your photoshoot category, choose a tailored package, and reserve your slot instantly with email confirmation &amp; calendar sync.
           </p>
         </div>
 
@@ -679,7 +679,7 @@ function BookingWizard() {
                     Step 3: Client Information
                   </h2>
                   <p className="text-sm text-slate-400 mt-1">
-                    Enter your contact details for instant WhatsApp booking confirmation and Google Calendar invitation.
+                    Enter your contact details to receive your booking confirmation email and access link.
                   </p>
                 </div>
 
@@ -735,10 +735,10 @@ function BookingWizard() {
                     </div>
                   </div>
 
-                  {/* Phone / WhatsApp */}
+                  {/* Contact Phone */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                      WhatsApp Phone Number (Malaysia +60) *
+                      Contact Phone Number (Malaysia +60) *
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
@@ -752,7 +752,7 @@ function BookingWizard() {
                       />
                     </div>
                     <p className="mt-1 text-[11px] text-slate-500">
-                      We will send your booking confirmation and management link directly to your WhatsApp.
+                      We will send your booking confirmation and token-based booking page link to your email once confirmed.
                     </p>
                     {errors.clientPhone && (
                       <p className="mt-1 text-xs text-red-400 font-medium">
@@ -868,7 +868,7 @@ function BookingWizard() {
                 {/* Client Info Summary */}
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Client Details (WhatsApp &amp; Calendar Invite)
+                    Client Contact Details
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                     <div>
@@ -884,7 +884,7 @@ function BookingWizard() {
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">WhatsApp</span>
+                      <span className="text-slate-500 block">Phone</span>
                       <span className="text-white font-medium">
                         {getValues("clientPhone")}
                       </span>
@@ -905,10 +905,10 @@ function BookingWizard() {
                   <Lock className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
                   <div className="text-xs space-y-1">
                     <p className="font-semibold text-white">
-                      15-Minute Exclusive Slot Lock &amp; Instant WhatsApp Notification
+                      15-Minute Exclusive Slot Lock &amp; Instant Notification
                     </p>
                     <p className="text-slate-400">
-                      When you click &ldquo;Proceed to Payment&rdquo;, this time window will be locked exclusively for 15 minutes and both you and the studio admin will be notified via WhatsApp.
+                      When you click &ldquo;Proceed to Payment&rdquo;, this time window will be locked exclusively for 15 minutes and you will receive an email invitation with your booking page link upon confirmation.
                     </p>
                   </div>
                 </div>
@@ -1064,7 +1064,7 @@ function BookingWizard() {
               <div className="mt-5 pt-4 border-t border-white/5 space-y-2 text-[11px] text-slate-400">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  Instant WhatsApp &amp; Google Calendar sync
+                  Email confirmation &amp; Google Calendar sync
                 </div>
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />

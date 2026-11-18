@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import {
-  sendAdminWhatsAppNotification,
-  sendCustomerWhatsAppNotification,
-  NotificationEventType,
-} from "@/lib/whatsapp";
-import { sendBookingNotifications } from "@/lib/notifications";
-import { isEmailConfigured } from "@/lib/email";
+import type { NotificationEventType } from "@/lib/whatsapp";
+import { sendAdminTelegramNotification } from "@/lib/telegram";
+import { isEmailConfigured, sendCustomerEmailNotification } from "@/lib/email";
 
 export async function GET(request: Request) {
   try {
@@ -68,7 +64,6 @@ export async function GET(request: Request) {
     const stats = {
       total: allStats.length,
       unreadCount: allStats.filter((n) => !n.isRead).length,
-      whatsappCount: allStats.filter((n) => n.channel === "WHATSAPP").length,
       telegramCount: allStats.filter((n) => n.channel === "TELEGRAM").length,
       emailCount: allStats.filter((n) => n.channel === "EMAIL").length,
       calendarCount: allStats.filter((n) => n.channel === "GOOGLE_CALENDAR").length,
@@ -82,15 +77,6 @@ export async function GET(request: Request) {
     return NextResponse.json({
       notifications,
       stats,
-      whatsappConfig: {
-        whatsappNumber: admin?.whatsappNumber || "",
-        whatsappEnabled: admin?.whatsappEnabled ?? true,
-        whatsappNotifyOnCheckout: admin?.whatsappNotifyOnCheckout ?? true,
-        whatsappNotifyOnConfirm: admin?.whatsappNotifyOnConfirm ?? true,
-        whatsappNotifyCustomer: admin?.whatsappNotifyCustomer ?? true,
-        whatsappProvider: admin?.whatsappProvider || "callmebot",
-        hasApiKey: !!admin?.whatsappApiKey,
-      },
       alertChannels: {
         telegramEnabled: admin?.telegramEnabled ?? false,
         telegramConfigured: !!(
@@ -112,7 +98,7 @@ export async function GET(request: Request) {
 }
 
 const dispatchSchema = z.object({
-  action: z.enum(["send_booking_alert", "send_custom", "test"]).default("send_booking_alert"),
+  action: z.enum(["send_booking_alert", "test"]).default("send_booking_alert"),
   bookingId: z.string().optional(),
   recipientRole: z.enum(["ADMIN", "CUSTOMER", "BOTH"]).default("BOTH"),
   eventType: z
@@ -124,8 +110,6 @@ const dispatchSchema = z.object({
       "TEST",
     ])
     .default("BOOKING_CONFIRMED"),
-  targetNumber: z.string().optional(),
-  customMessage: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -143,32 +127,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const { action, bookingId, recipientRole, eventType, targetNumber, customMessage } =
-      parsed.data;
+    const { action, bookingId, recipientRole, eventType } = parsed.data;
 
     if (action === "test") {
-      const res = await sendAdminWhatsAppNotification({
-        eventType: "TEST",
-        targetNumber: targetNumber || undefined,
-      });
-      return NextResponse.json(res);
-    }
-
-    if (action === "send_custom") {
-      if (!targetNumber || !customMessage) {
+      const res = await sendAdminTelegramNotification({ eventType: "TEST" });
+      if (!res.success) {
         return NextResponse.json(
-          { error: "Target WhatsApp number and message are required" },
+          { error: res.error || res.reason || "Telegram test failed" },
           { status: 400 }
         );
       }
-
-      const res = await sendAdminWhatsAppNotification({
-        eventType: eventType as NotificationEventType,
-        recipientRole: recipientRole === "CUSTOMER" ? "CUSTOMER" : "ADMIN",
-        targetNumber,
-        customMessage,
-      });
-
       return NextResponse.json(res);
     }
 
@@ -188,33 +156,72 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const invitationUrl = `${appUrl}/booking/manage/${booking.manageToken}`;
+
     if (recipientRole === "BOTH") {
-      const results = await sendBookingNotifications({
-        eventType: eventType as NotificationEventType,
-        booking,
-        service: booking.service,
-      });
+      const [telegramRes, emailRes] = await Promise.allSettled([
+        sendAdminTelegramNotification({
+          eventType: eventType as NotificationEventType,
+          recipientRole: "ADMIN",
+          booking,
+          service: booking.service,
+        }),
+        sendCustomerEmailNotification({
+          eventType: "BOOKING_CONFIRMED",
+          recipientRole: "CUSTOMER",
+          booking,
+          service: booking.service,
+          forceSend: true,
+        }),
+      ]);
+
       return NextResponse.json({
         success: true,
-        results,
-        directUrl: results.customer?.directUrl || results.admin?.directUrl,
+        results: {
+          telegram:
+            telegramRes.status === "fulfilled"
+              ? telegramRes.value
+              : { success: false, status: "FAILED", error: "Telegram alert failed" },
+          email:
+            emailRes.status === "fulfilled"
+              ? emailRes.value
+              : { success: false, status: "FAILED", error: "Email invite failed" },
+        },
+        invitationUrl,
       });
-    } else if (recipientRole === "CUSTOMER") {
-      const res = await sendCustomerWhatsAppNotification({
-        eventType: eventType as NotificationEventType,
-        booking,
-        service: booking.service,
-      });
-      return NextResponse.json(res);
-    } else {
-      const res = await sendAdminWhatsAppNotification({
-        eventType: eventType as NotificationEventType,
-        recipientRole: "ADMIN",
-        booking,
-        service: booking.service,
-      });
-      return NextResponse.json(res);
     }
+
+    if (recipientRole === "CUSTOMER") {
+      const res = await sendCustomerEmailNotification({
+        eventType: "BOOKING_CONFIRMED",
+        recipientRole: "CUSTOMER",
+        booking,
+        service: booking.service,
+        forceSend: true,
+      });
+      if (!res.success && res.status === "FAILED") {
+        return NextResponse.json(
+          { error: res.error || "Failed to send confirmation email" },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ ...res, invitationUrl });
+    }
+
+    const res = await sendAdminTelegramNotification({
+      eventType: eventType as NotificationEventType,
+      recipientRole: "ADMIN",
+      booking,
+      service: booking.service,
+    });
+    if (!res.success) {
+      return NextResponse.json(
+        { error: res.error || res.reason || "Failed to send Telegram alert" },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json(res);
   } catch (error) {
     console.error("[Admin Notifications] POST error:", error);
     return NextResponse.json(
@@ -284,4 +291,3 @@ export async function DELETE(request: Request) {
     );
   }
 }
-

@@ -52,9 +52,9 @@ function SuccessContent() {
           <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-start gap-3">
             <Mail className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
             <div className="text-xs sm:text-sm">
-              <p className="font-semibold text-white">Google Calendar Invite Dispatched</p>
+              <p className="font-semibold text-white">Confirmation Email &amp; Booking Link Dispatched</p>
               <p className="text-indigo-200/80 mt-0.5">
-                A calendar invitation with studio location details and photoshoot tips has been sent to your email.
+                An email with your full booking details and token-based management link has been sent to your email address.
               </p>
             </div>
           </div>

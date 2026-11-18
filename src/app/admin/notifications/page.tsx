@@ -5,7 +5,6 @@ import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import {
   Bell,
-  MessageSquare,
   Calendar,
   Send,
   CheckCircle2,
@@ -20,7 +19,6 @@ import {
   Shield,
   Loader2,
   Settings,
-  Phone,
   Mail,
 } from "lucide-react";
 import { formatMYR, getCategoryBadgeClass } from "@/lib/categories";
@@ -41,7 +39,6 @@ interface NotificationItem {
 interface NotificationStats {
   total: number;
   unreadCount: number;
-  whatsappCount: number;
   telegramCount?: number;
   emailCount?: number;
   calendarCount: number;
@@ -54,6 +51,7 @@ interface NotificationStats {
 
 interface RecentBookingItem {
   id: string;
+  manageToken?: string;
   clientName: string;
   clientPhone: string;
   clientEmail: string;
@@ -71,7 +69,6 @@ export default function AdminNotificationsPage() {
   const [stats, setStats] = useState<NotificationStats>({
     total: 0,
     unreadCount: 0,
-    whatsappCount: 0,
     telegramCount: 0,
     emailCount: 0,
     calendarCount: 0,
@@ -87,15 +84,6 @@ export default function AdminNotificationsPage() {
     emailConfigured: boolean;
     emailNotifyCustomer: boolean;
   } | null>(null);
-  const [whatsappConfig, setWhatsappConfig] = useState<{
-    whatsappNumber: string;
-    whatsappEnabled: boolean;
-    whatsappNotifyOnCheckout: boolean;
-    whatsappNotifyOnConfirm: boolean;
-    whatsappNotifyCustomer: boolean;
-    whatsappProvider: string;
-    hasApiKey: boolean;
-  } | null>(null);
   const [recentBookings, setRecentBookings] = useState<RecentBookingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -106,7 +94,7 @@ export default function AdminNotificationsPage() {
   const [eventFilter, setEventFilter] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Quick Dispatch Drawer State
+  // Manual Dispatcher State
   const [selectedBookingId, setSelectedBookingId] = useState("");
   const [dispatchRole, setDispatchRole] = useState<"BOTH" | "CUSTOMER" | "ADMIN">("BOTH");
   const [dispatchEvent, setDispatchEvent] = useState<
@@ -116,7 +104,7 @@ export default function AdminNotificationsPage() {
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     text: string;
-    directUrl?: string;
+    invitationUrl?: string;
   } | null>(null);
 
   const loadNotifications = async (quiet = false) => {
@@ -135,7 +123,6 @@ export default function AdminNotificationsPage() {
         const data = await res.json();
         setNotifications(data.notifications || []);
         if (data.stats) setStats(data.stats);
-        if (data.whatsappConfig) setWhatsappConfig(data.whatsappConfig);
         if (data.alertChannels) setAlertChannels(data.alertChannels);
         if (data.recentBookings) {
           setRecentBookings(data.recentBookings);
@@ -168,9 +155,7 @@ export default function AdminNotificationsPage() {
           if (!ignore) {
             setNotifications(data.notifications || []);
             if (data.stats) setStats(data.stats);
-            if (data.whatsappConfig) setWhatsappConfig(data.whatsappConfig);
             if (data.alertChannels) setAlertChannels(data.alertChannels);
-        if (data.alertChannels) setAlertChannels(data.alertChannels);
             if (data.recentBookings) {
               setRecentBookings(data.recentBookings);
               if (data.recentBookings.length > 0) {
@@ -247,7 +232,7 @@ export default function AdminNotificationsPage() {
     }
   };
 
-  const handleSendBookingWhatsApp = async (e: React.FormEvent) => {
+  const handleSendBookingNotification = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBookingId) return;
     setIsDispatching(true);
@@ -265,21 +250,23 @@ export default function AdminNotificationsPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to dispatch WhatsApp alert");
+      if (!res.ok) throw new Error(data.error || "Failed to dispatch notification");
 
       setFeedback({
         type: "success",
         text:
           dispatchRole === "BOTH"
-            ? "WhatsApp alerts dispatched to both Customer and Admin!"
-            : `WhatsApp alert dispatched to ${dispatchRole}!`,
-        directUrl: data.directUrl,
+            ? "Telegram Admin alert and Customer Token-Based Invitation email dispatched!"
+            : dispatchRole === "ADMIN"
+            ? "Admin Telegram bot alert dispatched!"
+            : "Customer Token-Based Confirmation Email dispatched!",
+        invitationUrl: data.invitationUrl,
       });
       loadNotifications(true);
     } catch (err) {
       setFeedback({
         type: "error",
-        text: err instanceof Error ? err.message : "Failed to dispatch alert",
+        text: err instanceof Error ? err.message : "Failed to dispatch notification",
       });
     } finally {
       setIsDispatching(false);
@@ -309,7 +296,7 @@ export default function AdminNotificationsPage() {
             )}
           </h1>
           <p className="text-xs text-[#aaaaaa] mt-0.5">
-            Activity and alerts for booking confirmations, reminders, and team notifications.
+            Monitor Admin Telegram bot alerts and Customer Token-Based Email invitations.
           </p>
         </div>
 
@@ -366,37 +353,41 @@ export default function AdminNotificationsPage() {
         <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-[#2a2a2a]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider">
-              Admin WhatsApp Alerts
+              Admin Telegram Alerts
             </span>
-            <div className="w-7 h-7 rounded-lg bg-[#272727] text-[#f1f1f1] flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-[#272727] text-[#38bdf8] flex items-center justify-center">
               <Shield className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-[#f1f1f1]">{stats.adminAlertsCount}</div>
+          <div className="text-2xl font-bold text-[#f1f1f1]">
+            {stats.telegramCount ?? stats.adminAlertsCount}
+          </div>
           <p className="text-[11px] text-[#717171] mt-1">
-            Alerts when bookings are received
+            Instant alerts via Telegram Bot
           </p>
         </div>
 
         <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-[#2a2a2a]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider">
-              Customer WhatsApp Alerts
+              Customer Email Invites
             </span>
-            <div className="w-7 h-7 rounded-lg bg-[#272727] text-[#4ade80] flex items-center justify-center">
-              <User className="w-3.5 h-3.5" />
+            <div className="w-7 h-7 rounded-lg bg-[#272727] text-[#f472b6] flex items-center justify-center">
+              <Mail className="w-3.5 h-3.5" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-[#f1f1f1]">{stats.customerAlertsCount}</div>
+          <div className="text-2xl font-bold text-[#f1f1f1]">
+            {stats.emailCount ?? stats.customerAlertsCount}
+          </div>
           <p className="text-[11px] text-[#717171] mt-1">
-            Confirmations sent to customers
+            Token-based confirmation emails
           </p>
         </div>
 
         <div className="bg-[#1a1a1a] p-4 rounded-2xl border border-[#2a2a2a]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider">
-              Channels (Option D)
+              Active Channels
             </span>
             <div className="w-7 h-7 rounded-lg bg-[#272727] text-[#38bdf8] flex items-center justify-center">
               <Send className="w-3.5 h-3.5" />
@@ -404,15 +395,24 @@ export default function AdminNotificationsPage() {
           </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${alertChannels?.telegramConfigured ? "bg-[#4ade80]" : "bg-[#facc15]"}`} />
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  alertChannels?.telegramConfigured ? "bg-[#4ade80]" : "bg-[#facc15]"
+                }`}
+              />
               <span className="text-xs font-semibold text-[#f1f1f1]">
-                Telegram: {alertChannels?.telegramConfigured ? "Connected" : "Setup Required"}
+                Telegram: {alertChannels?.telegramConfigured ? "Connected" : "Setup Needed"}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${alertChannels?.emailConfigured ? "bg-[#4ade80]" : "bg-[#717171]"}`} />
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  alertChannels?.emailNotifyCustomer ? "bg-[#4ade80]" : "bg-[#717171]"
+                }`}
+              />
               <span className="text-xs font-semibold text-[#aaaaaa]">
-                Email: {alertChannels?.emailConfigured ? "Resend Active" : "1-Click WA Active"}
+                Customer Email:{" "}
+                {alertChannels?.emailNotifyCustomer ? "Token Invite Active" : "Disabled"}
               </span>
             </div>
           </div>
@@ -421,35 +421,33 @@ export default function AdminNotificationsPage() {
             className="text-[11px] text-[#3ea6ff] hover:underline mt-2 inline-flex items-center gap-1"
           >
             <Settings className="w-3 h-3" />
-            Manage Telegram &amp; Email Alerts
+            Configure Bot &amp; Email
           </Link>
         </div>
       </div>
 
-      {/* Quick Booking WhatsApp Dispatcher Card */}
+      {/* Manual Notification Dispatcher Card (Telegram & Email) */}
       <div className="bg-[#1a1a1a] p-5 rounded-2xl border border-[#2a2a2a] space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#272727] text-[#4ade80] flex items-center justify-center">
-              <Send className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-bold text-[#f1f1f1]">
-                Manual WhatsApp Dispatcher (Customer &amp; Admin)
-              </h2>
-              <p className="text-xs text-slate-400">
-                Manually trigger or re-send formatted WhatsApp notifications (in RM) to the customer, admin, or both.
-              </p>
-            </div>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#272727] text-[#38bdf8] flex items-center justify-center">
+            <Send className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="text-sm sm:text-base font-bold text-[#f1f1f1]">
+              Manual Notification Dispatcher (Telegram &amp; Email)
+            </h2>
+            <p className="text-xs text-[#aaaaaa]">
+              Trigger an Admin Telegram bot alert or send a Customer Token-Based Confirmation Email.
+            </p>
           </div>
         </div>
 
         {feedback && (
           <div
-            className={`p-3.5 rounded-xl border text-xs flex items-center justify-between gap-3 ${
+            className={`p-3.5 rounded-xl border text-xs flex flex-wrap items-center justify-between gap-3 ${
               feedback.type === "success"
-                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-                : "bg-rose-500/10 border-rose-500/30 text-rose-300"
+                ? "bg-[#0e2a1b] border-[#164e2d] text-[#86efac]"
+                : "bg-[#2e1414] border-[#521c1c] text-[#fca5a5]"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -460,40 +458,38 @@ export default function AdminNotificationsPage() {
               )}
               <span>{feedback.text}</span>
             </div>
-            {feedback.directUrl && (
-              <a
-                href={feedback.directUrl}
+            {feedback.invitationUrl && (
+              <Link
+                href={feedback.invitationUrl}
                 target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f1f1f1] hover:bg-white text-[#0f0f0f] font-semibold whitespace-nowrap"
               >
-                <MessageSquare className="w-3.5 h-3.5" />
-                Open in WhatsApp
+                Open Customer Booking Page
                 <ExternalLink className="w-3 h-3" />
-              </a>
+              </Link>
             )}
           </div>
         )}
 
         <form
-          onSubmit={handleSendBookingWhatsApp}
+          onSubmit={handleSendBookingNotification}
           className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end"
         >
           <div className="md:col-span-5">
-            <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1">
               Select Booking
             </label>
             <select
               value={selectedBookingId}
               onChange={(e) => setSelectedBookingId(e.target.value)}
-              className="w-full bg-[#10131e] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[#121212] border border-[#2a2a2a] rounded-xl px-3.5 py-2.5 text-xs text-[#f1f1f1] focus:outline-none focus:border-[#3ea6ff]"
             >
               {recentBookings.length === 0 ? (
                 <option value="">No bookings available yet</option>
               ) : (
                 recentBookings.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.clientName} ({b.clientPhone}) — [{b.service?.category || "Photoshoot"}]{" "}
+                    {b.clientName} ({b.clientEmail}) — [{b.service?.category || "Photoshoot"}]{" "}
                     {b.service?.name} ({formatMYR(b.totalAmount)})
                   </option>
                 ))
@@ -502,7 +498,7 @@ export default function AdminNotificationsPage() {
           </div>
 
           <div className="md:col-span-3">
-            <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1">
               Recipient
             </label>
             <select
@@ -510,17 +506,17 @@ export default function AdminNotificationsPage() {
               onChange={(e) =>
                 setDispatchRole(e.target.value as "BOTH" | "CUSTOMER" | "ADMIN")
               }
-              className="w-full bg-[#10131e] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[#121212] border border-[#2a2a2a] rounded-xl px-3.5 py-2.5 text-xs text-[#f1f1f1] focus:outline-none focus:border-[#3ea6ff]"
             >
-              <option value="BOTH">Both Customer &amp; Admin</option>
-              <option value="CUSTOMER">Customer Only (Client Phone)</option>
-              <option value="ADMIN">Admin Only (Studio Phone)</option>
+              <option value="BOTH">Both (Admin Telegram + Customer Email)</option>
+              <option value="ADMIN">Admin Only (Telegram Bot)</option>
+              <option value="CUSTOMER">Customer Only (Token Confirmation Email)</option>
             </select>
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Template
+            <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1">
+              Event
             </label>
             <select
               value={dispatchEvent}
@@ -532,7 +528,7 @@ export default function AdminNotificationsPage() {
                     | "BOOKING_RESCHEDULED"
                 )
               }
-              className="w-full bg-[#10131e] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[#121212] border border-[#2a2a2a] rounded-xl px-3.5 py-2.5 text-xs text-[#f1f1f1] focus:outline-none focus:border-[#3ea6ff]"
             >
               <option value="BOOKING_CONFIRMED">Booking Confirmed</option>
               <option value="BOOKING_CREATED">New Booking Hold</option>
@@ -544,7 +540,7 @@ export default function AdminNotificationsPage() {
             <button
               type="submit"
               disabled={!selectedBookingId || isDispatching}
-              className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded-full bg-[#f1f1f1] hover:bg-white text-[#0f0f0f] font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
             >
               {isDispatching ? (
                 <>
@@ -570,13 +566,12 @@ export default function AdminNotificationsPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by phone, client name, package, or message..."
+            placeholder="Search by recipient, client name, package, or message..."
             className="w-full pl-10 pr-4 py-2 bg-[#121212] border border-[#2a2a2a] rounded-full text-xs text-[#f1f1f1] placeholder-[#717171] focus:outline-none focus:border-[#3ea6ff]"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-          {/* Role Filter */}
           {(["ALL", "ADMIN", "CUSTOMER"] as const).map((r) => {
             const active = roleFilter === r;
             return (
@@ -590,16 +585,11 @@ export default function AdminNotificationsPage() {
                     : "bg-[#272727] text-[#aaaaaa] hover:text-[#f1f1f1] hover:bg-[#333333]"
                 }`}
               >
-                {r === "ALL"
-                  ? "All"
-                  : r === "ADMIN"
-                  ? "Admin"
-                  : "Customer"}
+                {r === "ALL" ? "All" : r === "ADMIN" ? "Admin" : "Customer"}
               </button>
             );
           })}
 
-          {/* Channel Filter */}
           <select
             value={channelFilter}
             onChange={(e) => setChannelFilter(e.target.value)}
@@ -608,11 +598,8 @@ export default function AdminNotificationsPage() {
             <option value="ALL">All Channels</option>
             <option value="TELEGRAM">Telegram</option>
             <option value="EMAIL">Email</option>
-            <option value="WHATSAPP">WhatsApp</option>
-            <option value="GOOGLE_CALENDAR">Google Calendar</option>
           </select>
 
-          {/* Event Filter */}
           <select
             value={eventFilter}
             onChange={(e) => setEventFilter(e.target.value)}
@@ -646,13 +633,9 @@ export default function AdminNotificationsPage() {
         ) : (
           notifications.map((n) => {
             const meta = parseMeta(n.metadata);
-            const directUrl =
-              meta?.directUrl ||
-              (n.channel === "WHATSAPP"
-                ? `https://wa.me/${n.recipient.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
-                    n.message
-                  )}`
-                : null);
+            const invitationPath = meta?.manageToken
+              ? `/booking/manage/${meta.manageToken}`
+              : meta?.invitationUrl || null;
 
             return (
               <div
@@ -668,24 +651,20 @@ export default function AdminNotificationsPage() {
                     {/* Badges Row */}
                     <div className="flex flex-wrap items-center gap-2">
                       {!n.isRead && (
-                        <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-[#cc0000]" />
                       )}
 
                       {/* Channel Badge */}
                       <span
                         className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                          n.channel === "WHATSAPP"
-                            ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                            : n.channel === "TELEGRAM"
-                            ? "bg-sky-500/15 text-sky-300 border-sky-500/30"
+                          n.channel === "TELEGRAM"
+                            ? "bg-[#142330] text-[#38bdf8] border-[#1d3d57]"
                             : n.channel === "EMAIL"
-                            ? "bg-pink-500/15 text-pink-300 border-pink-500/30"
-                            : "bg-blue-500/15 text-blue-300 border-blue-500/30"
+                            ? "bg-[#2e1823] text-[#f472b6] border-[#4c2236]"
+                            : "bg-[#272727] text-[#aaaaaa] border-[#383838]"
                         }`}
                       >
-                        {n.channel === "WHATSAPP" ? (
-                          <MessageSquare className="w-3 h-3" />
-                        ) : n.channel === "TELEGRAM" ? (
+                        {n.channel === "TELEGRAM" ? (
                           <Send className="w-3 h-3" />
                         ) : n.channel === "EMAIL" ? (
                           <Mail className="w-3 h-3" />
@@ -699,8 +678,8 @@ export default function AdminNotificationsPage() {
                       <span
                         className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                           n.recipientRole === "CUSTOMER"
-                            ? "bg-pink-500/15 text-pink-300 border-pink-500/30"
-                            : "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"
+                            ? "bg-[#2e1823] text-[#f472b6] border-[#4c2236]"
+                            : "bg-[#272727] text-[#f1f1f1] border-[#383838]"
                         }`}
                       >
                         {n.recipientRole === "CUSTOMER" ? (
@@ -708,13 +687,11 @@ export default function AdminNotificationsPage() {
                         ) : (
                           <Shield className="w-3 h-3" />
                         )}
-                        {n.recipientRole === "CUSTOMER"
-                          ? "TO CUSTOMER"
-                          : "TO ADMIN"}
+                        {n.recipientRole === "CUSTOMER" ? "TO CUSTOMER" : "TO ADMIN"}
                       </span>
 
                       {/* Event Type */}
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-slate-300 border border-white/10">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#121212] text-[#aaaaaa] border border-[#2a2a2a]">
                         {n.eventType.replace(/_/g, " ")}
                       </span>
 
@@ -731,47 +708,42 @@ export default function AdminNotificationsPage() {
 
                       {/* Status Badge */}
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           n.status === "SENT"
-                            ? "bg-emerald-500/20 text-emerald-300"
+                            ? "bg-[#0e2a1b] text-[#4ade80]"
                             : n.status === "SIMULATED"
-                            ? "bg-amber-500/20 text-amber-300"
-                            : "bg-rose-500/20 text-rose-300"
+                            ? "bg-[#2a220e] text-[#facc15]"
+                            : "bg-[#2e1414] text-[#f87171]"
                         }`}
                       >
-                        {n.status === "SENT"
-                          ? "LIVE SENT"
-                          : n.status === "SIMULATED"
-                          ? "READY FOR 1-CLICK WHATSAPP"
-                          : "FAILED"}
+                        {n.status}
                       </span>
 
-                      <span className="text-[11px] text-slate-500 font-mono flex items-center gap-1 ml-auto sm:ml-0">
+                      <span className="text-[11px] text-[#717171] font-mono flex items-center gap-1 ml-auto sm:ml-0">
                         <Clock className="w-3 h-3" />
                         {format(parseISO(n.createdAt), "dd MMM yyyy, hh:mm:ss a")}
                       </span>
                     </div>
 
                     {/* Recipient Info */}
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
-                      <span className="flex items-center gap-1 font-mono text-slate-200">
-                        <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                        Recipient: +{n.recipient.replace(/^\+/, "")}
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-[#aaaaaa]">
+                      <span className="font-mono text-[#f1f1f1]">
+                        Recipient: {n.recipient}
                       </span>
                       {meta?.clientName && (
-                        <span className="text-slate-400">
-                          • Client: <strong className="text-white">{meta.clientName}</strong>
+                        <span>
+                          • Client: <strong className="text-[#f1f1f1]">{meta.clientName}</strong>
                         </span>
                       )}
                       {meta?.totalAmount && (
-                        <span className="text-emerald-300 font-bold">
+                        <span className="text-[#4ade80] font-semibold">
                           • {formatMYR(meta.totalAmount)}
                         </span>
                       )}
                     </div>
 
                     {/* Message Body Box */}
-                    <pre className="p-3.5 rounded-xl bg-black/40 border border-white/5 text-xs text-slate-200 whitespace-pre-wrap font-sans leading-relaxed">
+                    <pre className="p-3.5 rounded-xl bg-[#121212] border border-[#2a2a2a] text-xs text-[#e5e5e5] whitespace-pre-wrap font-sans leading-relaxed">
                       {n.message}
                     </pre>
 
@@ -785,27 +757,22 @@ export default function AdminNotificationsPage() {
 
                   {/* Right Action Buttons */}
                   <div className="flex sm:flex-col items-end gap-2 shrink-0">
-                    {directUrl && (
-                      <a
-                        href={directUrl}
+                    {invitationPath && (
+                      <Link
+                        href={invitationPath}
                         target="_blank"
-                        rel="noreferrer"
-                        onClick={() => {
-                          if (!n.isRead) handleMarkRead(n.id);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#272727] hover:bg-[#333333] text-[#f1f1f1] text-xs font-medium border border-[#383838] transition"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        Send via WhatsApp
+                        <span>Open Booking Page</span>
                         <ExternalLink className="w-3 h-3" />
-                      </a>
+                      </Link>
                     )}
 
                     {!n.isRead && (
                       <button
                         type="button"
                         onClick={() => handleMarkRead(n.id)}
-                        className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold border border-white/10 cursor-pointer"
+                        className="px-3 py-1.5 rounded-full bg-[#272727] hover:bg-[#333333] text-[#aaaaaa] hover:text-[#f1f1f1] text-xs font-medium border border-[#383838] cursor-pointer"
                       >
                         Mark as Read
                       </button>
@@ -814,7 +781,7 @@ export default function AdminNotificationsPage() {
                     <button
                       type="button"
                       onClick={() => handleDelete(n.id)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                      className="p-1.5 rounded-lg text-[#717171] hover:text-[#f87171] hover:bg-[#2e1414] transition cursor-pointer"
                       title="Delete Notification"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -829,4 +796,3 @@ export default function AdminNotificationsPage() {
     </div>
   );
 }
-

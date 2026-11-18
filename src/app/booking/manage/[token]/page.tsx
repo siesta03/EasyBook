@@ -18,7 +18,6 @@ import {
   Trash2,
   ShieldAlert,
   Sparkles,
-  MessageSquare,
   CalendarPlus,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
@@ -286,32 +285,9 @@ function ManageBookingContent({
               <div className="pt-2 text-xs text-slate-400 border-t border-white/5 flex flex-wrap items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-emerald-400">
                   <Sparkles className="w-3.5 h-3.5" />
-                  WhatsApp &amp; Calendar Synced
+                  Token-Verified Booking Invitation
                 </span>
                 <div className="flex items-center gap-2">
-                  <a
-                    href={`https://wa.me/${booking.clientPhone
-                      .replace(/[^\d]/g, "")
-                      .replace(/^0/, "60")}?text=${encodeURIComponent(
-                      `📸 *EasyBook Studio Receipt*\nClient: ${booking.clientName}\nCategory: ${
-                        booking.service.category || "Indoor Photoshoot"
-                      }\nPackage: ${booking.service.name}\nDate: ${format(
-                        parseISO(booking.startTime),
-                        "EEEE, dd MMM yyyy"
-                      )}\nTime: ${format(parseISO(booking.startTime), "hh:mm a")} - ${format(
-                        parseISO(booking.endTime),
-                        "hh:mm a"
-                      )}\nAmount: ${formatMYR(booking.totalAmount)}\nManage Link: ${
-                        typeof window !== "undefined" ? window.location.href : ""
-                      }`
-                    )}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-semibold"
-                  >
-                    <MessageSquare className="w-3 h-3" />
-                    Send to WhatsApp
-                  </a>
                   <a
                     href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
                       `[${booking.service.category || "Photoshoot"}] ${booking.service.name}`

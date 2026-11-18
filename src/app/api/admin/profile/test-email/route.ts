@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { isEmailConfigured, sendEmail, toEmailHtml } from "@/lib/email";
+import {
+  buildTokenInvitationEmail,
+  isEmailConfigured,
+  sendEmail,
+} from "@/lib/email";
 
 const schema = z.object({
   to: z.string().email().optional(),
@@ -9,7 +13,7 @@ const schema = z.object({
 
 /**
  * POST /api/admin/profile/test-email
- * Sends a sample customer receipt email (defaults to the admin's own email).
+ * Sends a sample Token-Based Invitation email (defaults to the admin's own email).
  */
 export async function POST(request: Request) {
   try {
@@ -34,24 +38,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No recipient email" }, { status: 400 });
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const text = [
-      "Hi *Customer*, this is a sample of the booking receipt your customers will receive.",
-      "━━━━━━━━━━━━━━━━━━",
-      "🏷️ *Category:* Indoor Photoshoot",
-      "📦 *Package:* Studio Portrait Session (60 mins)",
-      "📅 *Date:* Saturday, 14 Nov 2026",
-      "⏰ *Time:* 10:00 AM - 11:00 AM",
-      "💳 *Amount Paid:* RM 250.00",
-      "━━━━━━━━━━━━━━━━━━",
-      `🔗 *Manage Booking:* ${appUrl}`,
-    ].join("\n");
+    const sampleStart = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+    sampleStart.setHours(10, 0, 0, 0);
+    const sampleEnd = new Date(sampleStart.getTime() + 60 * 60 * 1000);
+
+    const invitation = buildTokenInvitationEmail({
+      eventType: "BOOKING_CONFIRMED",
+      recipientRole: "CUSTOMER",
+      booking: {
+        id: "sample-booking-001",
+        manageToken: "sample-token-preview",
+        clientName: "Customer Preview",
+        clientEmail: to,
+        clientPhone: "+60123456789",
+        startTime: sampleStart,
+        endTime: sampleEnd,
+        totalAmount: 250,
+        notes: "Arrive 10 minutes early for studio briefing.",
+      },
+      service: {
+        name: "Studio Portrait Session",
+        category: "Indoor Photoshoot",
+        durationMinutes: 60,
+        bufferMinutes: 30,
+      },
+    });
 
     const result = await sendEmail({
       to,
-      subject: "Test email – EasyBook Studio booking receipt",
-      html: toEmailHtml(text, "Test Booking Receipt"),
-      text: text.replace(/\*/g, ""),
+      subject: `[Test] ${invitation.subject}`,
+      html: invitation.html,
+      text: invitation.plainText,
     });
 
     await prisma.notificationLog.create({
@@ -60,12 +77,16 @@ export async function POST(request: Request) {
         recipient: to,
         recipientRole: "CUSTOMER",
         eventType: "TEST",
-        message: text.replace(/\*/g, ""),
+        message: invitation.plainText,
         status: result.ok ? "SENT" : "FAILED",
         metadata: JSON.stringify({
           provider: "resend",
           resendId: result.id || null,
-          deliveryNote: result.ok ? `Test emailed to ${to}` : `Email error: ${result.error}`,
+          manageToken: "sample-token-preview",
+          invitationUrl: invitation.invitationUrl,
+          deliveryNote: result.ok
+            ? `Test token invitation emailed to ${to}`
+            : `Email error: ${result.error}`,
           sentAt: new Date().toISOString(),
         }),
       },
@@ -78,10 +99,13 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ success: true, message: `Test email sent to ${to}` });
+    return NextResponse.json({
+      success: true,
+      message: `Test token invitation email sent to ${to}`,
+      invitationUrl: invitation.invitationUrl,
+    });
   } catch (error) {
     console.error("[Test Email] Error:", error);
     return NextResponse.json({ error: "Failed to send test email" }, { status: 500 });
   }
 }
-

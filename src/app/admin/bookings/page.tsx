@@ -15,7 +15,6 @@ import {
   RefreshCw,
   Phone,
   Mail,
-  MessageSquare,
 } from "lucide-react";
 import {
   PHOTOSHOOT_CATEGORIES,
@@ -423,28 +422,6 @@ export default function AdminBookingsPage() {
                             Cancel
                           </button>
                         )}
-
-                        {/* WhatsApp Message */}
-                        <a
-                          href={`https://wa.me/${b.clientPhone.replace(/[^\d]/g, "").replace(/^0/, "60")}?text=${encodeURIComponent(`Hi ${b.clientName}, this is regarding your photoshoot booking for ${b.service.name} (${formatMYR(b.totalAmount)})!`)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="Message Client on WhatsApp"
-                          className="p-1.5 rounded-md border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#272727] text-[#aaaaaa] hover:text-[#4ade80] transition-colors"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                        </a>
-
-                        {/* Google Calendar */}
-                        <a
-                          href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Photoshoot: ${b.clientName} - ${b.service.name}`)}&dates=${new Date(b.startTime).toISOString().replace(/-|:|\.\d\d\d/g, "")}/${new Date(b.endTime).toISOString().replace(/-|:|\.\d\d\d/g, "")}&details=${encodeURIComponent(`Client: ${b.clientName}\nPhone: ${b.clientPhone}\nEmail: ${b.clientEmail}\nService: ${b.service.name}`)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="Add to Google Calendar"
-                          className="p-1.5 rounded-md border border-[#2a2a2a] bg-[#1f1f1f] hover:bg-[#272727] text-[#aaaaaa] hover:text-[#3ea6ff] transition-colors"
-                        >
-                          <CalendarIcon className="w-3.5 h-3.5" />
-                        </a>
 
                         {/* Client Portal Link */}
                         <Link

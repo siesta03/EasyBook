@@ -1,35 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import {
   User,
   Mail,
-  Phone,
   Calendar,
-  MessageSquare,
   CheckCircle2,
   AlertCircle,
   Loader2,
   Save,
   Send,
-  ExternalLink,
   ShieldCheck,
   RefreshCw,
   Copy,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
   KeyRound,
   History,
   Check,
-  Radio,
-  HelpCircle,
   Globe,
   BellRing,
-  Download,
-  Clock,
-  CalendarPlus,
 } from "lucide-react";
 
 interface AdminProfile {
@@ -37,33 +25,17 @@ interface AdminProfile {
   name: string;
   email: string;
   phone: string;
-  whatsappNumber: string;
-  whatsappEnabled: boolean;
   whatsappNotifyOnCheckout: boolean;
   whatsappNotifyOnConfirm: boolean;
-  whatsappNotifyCustomer?: boolean;
-  whatsappProvider: string;
-  whatsappApiKey: string;
   telegramEnabled?: boolean;
   hasTelegramBotToken?: boolean;
   telegramChatId?: string;
   emailNotifyCustomer?: boolean;
   calendarFeedToken: string;
   calendarFeedUrl: string;
-  googleCalendarEmail: string;
-  googleCalendarId: string;
-  googleServiceAccountEmail: string;
-  hasGooglePrivateKey: boolean;
-  googleCalendarConnected: boolean;
-  createdAt: string;
-  updatedAt: string;
 }
 
 interface SystemEnvDefaults {
-  hasEnvGoogleServiceAccount: boolean;
-  envGoogleServiceAccountEmail: string;
-  hasEnvGooglePrivateKey: boolean;
-  envGoogleCalendarId: string;
   hasEnvTelegramBotToken?: boolean;
   hasEnvTelegramChatId?: boolean;
   emailConfigured?: boolean;
@@ -81,23 +53,9 @@ interface NotificationLog {
   createdAt: string;
 }
 
-interface RecentBooking {
-  id: string;
-  clientName: string;
-  clientPhone: string;
-  clientEmail: string;
-  startTime: string;
-  endTime: string;
-  totalAmount: string | number;
-  status: string;
-  service: { name: string; durationMinutes: number };
-}
-
 export default function AdminProfilePage() {
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [testingWhatsApp, setTestingWhatsApp] = useState(false);
-  const [testingCalendar, setTestingCalendar] = useState(false);
 
   // Profile Form State
   const [name, setName] = useState("");
@@ -107,61 +65,37 @@ export default function AdminProfilePage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // WhatsApp State
-  const [whatsappNumber, setWhatsappNumber] = useState("");
-  const [whatsappEnabled, setWhatsappEnabled] = useState(true);
-  const [whatsappNotifyOnCheckout, setWhatsappNotifyOnCheckout] = useState(true);
-  const [whatsappNotifyOnConfirm, setWhatsappNotifyOnConfirm] = useState(true);
-  const [whatsappNotifyCustomer, setWhatsappNotifyCustomer] = useState(true);
-  const [whatsappProvider, setWhatsappProvider] = useState("callmebot");
-  const [whatsappApiKey, setWhatsappApiKey] = useState("");
-
-  // Telegram (Admin alerts) & Email (Customer receipts) State
+  // Telegram (Admin alerts only) & Customer Email (Token Invitation) State
   const [telegramEnabled, setTelegramEnabled] = useState(false);
   const [telegramBotToken, setTelegramBotToken] = useState("");
   const [hasTelegramBotToken, setHasTelegramBotToken] = useState(false);
   const [telegramChatId, setTelegramChatId] = useState("");
   const [telegramBotUsername, setTelegramBotUsername] = useState("");
+  const [notifyOnHold, setNotifyOnHold] = useState(true);
+  const [notifyOnConfirm, setNotifyOnConfirm] = useState(true);
   const [emailNotifyCustomer, setEmailNotifyCustomer] = useState(true);
   const [detectingChatId, setDetectingChatId] = useState(false);
   const [testingTelegram, setTestingTelegram] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testEmailTo, setTestEmailTo] = useState("");
 
-  // Google Calendar State
-  const [googleCalendarEmail, setGoogleCalendarEmail] = useState("");
-  const [googleCalendarId, setGoogleCalendarId] = useState("");
-  const [googleServiceAccountEmail, setGoogleServiceAccountEmail] = useState("");
-  const [googlePrivateKey, setGooglePrivateKey] = useState("");
-  const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false);
+  // Google Calendar (Tunnel Feed URL only)
+  const [calendarFeedToken, setCalendarFeedToken] = useState("");
   const [calendarFeedUrl, setCalendarFeedUrl] = useState("");
-  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
+  const [tunnelBaseUrl, setTunnelBaseUrl] = useState("");
+  const [copiedFeedUrl, setCopiedFeedUrl] = useState(false);
 
   // System & Logs
   const [envDefaults, setEnvDefaults] = useState<SystemEnvDefaults | null>(null);
   const [logs, setLogs] = useState<NotificationLog[]>([]);
-  const [activeTab, setActiveTab] = useState<"alerts" | "general" | "whatsapp" | "calendar" | "logs">("alerts");
+  const [activeTab, setActiveTab] = useState<"alerts" | "calendar" | "general" | "logs">("alerts");
 
   // Feedback Messages
   const [feedback, setFeedback] = useState<{
     type: "success" | "error" | "info" | "warning";
     message: string;
-    actionUrl?: string;
-    actionLabel?: string;
   } | null>(null);
 
-  const [copiedFeedUrl, setCopiedFeedUrl] = useState(false);
-  const [copiedServiceEmail, setCopiedServiceEmail] = useState(false);
-  const [showAdvancedCredentials, setShowAdvancedCredentials] = useState(false);
-  const [lastTestResult, setLastTestResult] = useState<{
-    type: "whatsapp" | "calendar";
-    message: string;
-    directUrl?: string;
-    time: string;
-    status: string;
-  } | null>(null);
-
-  // Fetch admin profile and notifications
   const loadProfile = async (quiet = false) => {
     if (!quiet) setLoading(true);
     try {
@@ -173,37 +107,18 @@ export default function AdminProfilePage() {
       setName(p.name || "");
       setEmail(p.email || "");
       setPhone(p.phone || "");
-      setWhatsappNumber(p.whatsappNumber || "");
-      setWhatsappEnabled(p.whatsappEnabled);
-      setWhatsappNotifyOnCheckout(p.whatsappNotifyOnCheckout);
-      setWhatsappNotifyOnConfirm(p.whatsappNotifyOnConfirm);
-      setWhatsappNotifyCustomer(p.whatsappNotifyCustomer ?? true);
-      setWhatsappProvider(p.whatsappProvider || "callmebot");
-      setWhatsappApiKey(p.whatsappApiKey || "");
+      setNotifyOnHold(p.whatsappNotifyOnCheckout);
+      setNotifyOnConfirm(p.whatsappNotifyOnConfirm);
       setTelegramEnabled(p.telegramEnabled ?? false);
       setHasTelegramBotToken(!!p.hasTelegramBotToken);
       setTelegramChatId(p.telegramChatId || "");
       setEmailNotifyCustomer(p.emailNotifyCustomer ?? true);
-        setTestEmailTo(p.email || "");
+      setTestEmailTo(p.email || "");
+      setCalendarFeedToken(p.calendarFeedToken || "");
       setCalendarFeedUrl(p.calendarFeedUrl || "");
-      setGoogleCalendarEmail(p.googleCalendarEmail || "");
-      setGoogleCalendarId(p.googleCalendarId || "");
-      setGoogleServiceAccountEmail(p.googleServiceAccountEmail || "");
-      setGoogleCalendarConnected(p.googleCalendarConnected);
 
       setEnvDefaults(data.systemEnvDefaults || null);
       setLogs(data.recentLogs || []);
-
-      // Fetch recent bookings for 1-click Google Calendar addition
-      try {
-        const bRes = await fetch("/api/admin/bookings");
-        if (bRes.ok) {
-          const bData = await bRes.json();
-          setRecentBookings(bData.slice(0, 5));
-        }
-      } catch (bErr) {
-        console.error("Failed to load bookings for calendar tab:", bErr);
-      }
     } catch (err: unknown) {
       console.error(err);
       setFeedback({
@@ -228,23 +143,15 @@ export default function AdminProfilePage() {
         setName(p.name || "");
         setEmail(p.email || "");
         setPhone(p.phone || "");
-        setWhatsappNumber(p.whatsappNumber || "");
-        setWhatsappEnabled(p.whatsappEnabled);
-        setWhatsappNotifyOnCheckout(p.whatsappNotifyOnCheckout);
-        setWhatsappNotifyOnConfirm(p.whatsappNotifyOnConfirm);
-        setWhatsappNotifyCustomer(p.whatsappNotifyCustomer ?? true);
-        setWhatsappProvider(p.whatsappProvider || "callmebot");
-        setWhatsappApiKey(p.whatsappApiKey || "");
-      setTelegramEnabled(p.telegramEnabled ?? false);
-      setHasTelegramBotToken(!!p.hasTelegramBotToken);
-      setTelegramChatId(p.telegramChatId || "");
-      setEmailNotifyCustomer(p.emailNotifyCustomer ?? true);
+        setNotifyOnHold(p.whatsappNotifyOnCheckout);
+        setNotifyOnConfirm(p.whatsappNotifyOnConfirm);
+        setTelegramEnabled(p.telegramEnabled ?? false);
+        setHasTelegramBotToken(!!p.hasTelegramBotToken);
+        setTelegramChatId(p.telegramChatId || "");
+        setEmailNotifyCustomer(p.emailNotifyCustomer ?? true);
         setTestEmailTo(p.email || "");
+        setCalendarFeedToken(p.calendarFeedToken || "");
         setCalendarFeedUrl(p.calendarFeedUrl || "");
-        setGoogleCalendarEmail(p.googleCalendarEmail || "");
-        setGoogleCalendarId(p.googleCalendarId || "");
-        setGoogleServiceAccountEmail(p.googleServiceAccountEmail || "");
-        setGoogleCalendarConnected(p.googleCalendarConnected);
 
         setEnvDefaults(data.systemEnvDefaults || null);
         setLogs(data.recentLogs || []);
@@ -254,23 +161,12 @@ export default function AdminProfilePage() {
           const tab = params.get("tab");
           if (
             tab === "alerts" ||
-            tab === "whatsapp" ||
             tab === "calendar" ||
             tab === "general" ||
             tab === "logs"
           ) {
             setActiveTab(tab);
           }
-        }
-
-        try {
-          const bRes = await fetch("/api/admin/bookings");
-          if (bRes.ok) {
-            const bData = await bRes.json();
-            if (!ignore) setRecentBookings(bData.slice(0, 5));
-          }
-        } catch (bErr) {
-          console.error("Failed to load bookings for calendar tab:", bErr);
         }
       } catch (err: unknown) {
         console.error(err);
@@ -290,13 +186,11 @@ export default function AdminProfilePage() {
     };
   }, []);
 
-  // Save Profile handler
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingProfile(true);
     setFeedback(null);
 
-    // Password validation
     if (newPassword) {
       if (newPassword.length < 6) {
         setFeedback({
@@ -329,24 +223,13 @@ export default function AdminProfilePage() {
         name,
         email,
         phone,
-        whatsappNumber,
-        whatsappEnabled,
-        whatsappNotifyOnCheckout,
-        whatsappNotifyOnConfirm,
-        whatsappNotifyCustomer,
-        whatsappProvider,
-        whatsappApiKey,
+        whatsappNotifyOnCheckout: notifyOnHold,
+        whatsappNotifyOnConfirm: notifyOnConfirm,
         telegramEnabled,
         telegramChatId,
         emailNotifyCustomer,
-        googleCalendarEmail,
-        googleCalendarId,
-        googleServiceAccountEmail,
       };
 
-      if (googlePrivateKey.trim()) {
-        payload.googlePrivateKey = googlePrivateKey.trim();
-      }
       if (telegramBotToken.trim()) {
         payload.telegramBotToken = telegramBotToken.trim();
       }
@@ -369,14 +252,12 @@ export default function AdminProfilePage() {
 
       setFeedback({
         type: "success",
-        message: "Settings saved successfully! " + (whatsappApiKey ? "WhatsApp real delivery is active." : "Note: WhatsApp is in simulation mode until an API key is configured."),
+        message: "Settings saved successfully.",
       });
 
-      // Clear password fields on success
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setGooglePrivateKey("");
       setTelegramBotToken("");
 
       await loadProfile(true);
@@ -390,7 +271,6 @@ export default function AdminProfilePage() {
     }
   };
 
-  // Telegram: detect the chat ID of whoever last messaged the bot
   const handleDetectChatId = async () => {
     setDetectingChatId(true);
     setFeedback(null);
@@ -422,7 +302,6 @@ export default function AdminProfilePage() {
     }
   };
 
-  // Telegram: send test alert
   const handleTestTelegram = async () => {
     setTestingTelegram(true);
     setFeedback(null);
@@ -450,7 +329,6 @@ export default function AdminProfilePage() {
     }
   };
 
-  // Email: send test receipt
   const handleTestEmail = async () => {
     setTestingEmail(true);
     setFeedback(null);
@@ -462,7 +340,10 @@ export default function AdminProfilePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Email test failed");
-      setFeedback({ type: "success", message: `${data.message}. Check the inbox (and spam folder).` });
+      setFeedback({
+        type: "success",
+        message: `${data.message}. Check your inbox (and spam folder).`,
+      });
       await loadProfile(true);
     } catch (err: unknown) {
       setFeedback({
@@ -474,234 +355,109 @@ export default function AdminProfilePage() {
     }
   };
 
-  // Test WhatsApp Notification
-  const handleTestWhatsApp = async () => {
-    if (!whatsappNumber.trim()) {
-      setFeedback({
-        type: "error",
-        message: "Please enter a valid WhatsApp number with country code (e.g. +60189779241) first.",
-      });
-      return;
-    }
-
-    setTestingWhatsApp(true);
-    setFeedback(null);
-    try {
-      const res = await fetch("/api/admin/profile/test-whatsapp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          whatsappNumber,
-          provider: whatsappProvider,
-          apiKey: whatsappApiKey || undefined,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to dispatch test notification");
-      }
-
-      if (whatsappApiKey && whatsappApiKey.trim()) {
-        setFeedback({
-          type: "success",
-          message: `Live alert dispatched via ${whatsappProvider.toUpperCase()} to +${data.recipient}! Check your WhatsApp now.`,
-          actionUrl: data.directUrl,
-          actionLabel: "Open WhatsApp Chat",
-        });
-      } else {
-        setFeedback({
-          type: "warning",
-          message: `Alert recorded in simulation mode because no WhatsApp API Key is configured yet. Click "Open in WhatsApp Web" below to send it with 1 click, or add a free CallMeBot key for automatic phone delivery!`,
-          actionUrl: data.directUrl,
-          actionLabel: "Open in WhatsApp Web / App",
-        });
-      }
-
-      setLastTestResult({
-        type: "whatsapp",
-        message: data.previewText,
-        directUrl: data.directUrl,
-        time: new Date().toLocaleTimeString(),
-        status: whatsappApiKey ? "LIVE SENT" : "SIMULATED",
-      });
-
-      if (data.recentLogs) {
-        setLogs(data.recentLogs);
-      }
-    } catch (err: unknown) {
-      setFeedback({
-        type: "error",
-        message: err instanceof Error ? err.message : "Test WhatsApp alert failed",
-      });
-    } finally {
-      setTestingWhatsApp(false);
-    }
-  };
-
-  // Test Google Calendar Connection
-  const handleTestCalendar = async () => {
-    setTestingCalendar(true);
-    setFeedback(null);
-    try {
-      const res = await fetch("/api/admin/profile/test-calendar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gmailAccount: googleCalendarEmail,
-          calendarId: googleCalendarId || googleCalendarEmail,
-          serviceAccountEmail: googleServiceAccountEmail,
-          privateKey: googlePrivateKey || undefined,
-        }),
-      });
-
-      const data = await res.json();
-      if (!data.success) {
-        setFeedback({
-          type: "warning",
-          message: data.message,
-          actionUrl: calendarFeedUrl,
-          actionLabel: "Subscribe via Google Calendar Feed (Instant)",
-        });
-        setGoogleCalendarConnected(false);
-      } else {
-        setFeedback({
-          type: "success",
-          message: data.message,
-        });
-        setGoogleCalendarConnected(!data.isSimulated);
-      }
-
-      if (data.recentLogs) {
-        setLogs(data.recentLogs);
-      }
-    } catch (err: unknown) {
-      setFeedback({
-        type: "error",
-        message: err instanceof Error ? err.message : "Calendar connection test failed",
-      });
-    } finally {
-      setTestingCalendar(false);
-    }
-  };
+  const cleanTunnel = tunnelBaseUrl.trim().replace(/\/+$/, "");
+  const effectiveFeedUrl = cleanTunnel
+    ? `${cleanTunnel}/api/calendar/feed?token=${calendarFeedToken || "default"}`
+    : calendarFeedUrl || `http://localhost:3000/api/calendar/feed?token=${calendarFeedToken || "default"}`;
 
   const copyFeedUrl = () => {
-    if (!calendarFeedUrl) return;
-    navigator.clipboard.writeText(calendarFeedUrl);
+    if (!effectiveFeedUrl) return;
+    navigator.clipboard.writeText(effectiveFeedUrl);
     setCopiedFeedUrl(true);
     setTimeout(() => setCopiedFeedUrl(false), 2500);
   };
 
-  const copyServiceEmail = (emailText: string) => {
-    if (!emailText) return;
-    navigator.clipboard.writeText(emailText);
-    setCopiedServiceEmail(true);
-    setTimeout(() => setCopiedServiceEmail(false), 2500);
-  };
-
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-4" />
-        <p className="text-sm">Loading administrator profile and integrations...</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-[#aaaaaa]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#aaaaaa] mb-3" />
+        <p className="text-xs">Loading settings &amp; integrations...</p>
       </div>
     );
   }
 
-  const activeServiceAccount =
-    googleServiceAccountEmail ||
-    envDefaults?.envGoogleServiceAccountEmail ||
-    "easybook-calendar-service@easybook-studio.iam.gserviceaccount.com";
-
-  const cleanWaNumber = whatsappNumber.replace(/[^\d]/g, "");
-  const callMeBotActivationUrl1 = `https://wa.me/34644263377?text=I%20allow%20callmebot%20to%20send%20me%20messages`;
-  const callMeBotActivationUrl2 = `https://wa.me/34644205484?text=I%20allow%20callmebot%20to%20send%20me%20messages`;
+  const telegramConnected =
+    telegramEnabled &&
+    (hasTelegramBotToken || !!envDefaults?.hasEnvTelegramBotToken) &&
+    !!telegramChatId;
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-12">
+    <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2a2a2a] pb-5">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-            <User className="w-7 h-7 text-indigo-400" />
-            Admin Profile & Integrations
+          <h1 className="text-xl sm:text-2xl font-bold text-[#f1f1f1] tracking-tight">
+            Settings &amp; Integrations
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Manage your account credentials, link your real Google Calendar via Gmail, and configure instant WhatsApp notifications for customer bookings.
+          <p className="text-[#aaaaaa] text-xs mt-1">
+            Configure Admin Telegram bot alerts, Customer Token-Based Email invitations, and Google Calendar tunnel sync.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => loadProfile(false)}
-            className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition border border-white/10 cursor-pointer"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Refresh
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => loadProfile(false)}
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#1f1f1f] hover:bg-[#272727] text-[#f1f1f1] rounded-full text-xs font-medium transition border border-[#2a2a2a] cursor-pointer self-start sm:self-center"
+        >
+          <RefreshCw className="w-3.5 h-3.5 text-[#aaaaaa]" />
+          Refresh
+        </button>
       </div>
 
-      {/* Profile Overview Banner with Honest, Accurate Status */}
+      {/* Profile Overview Header */}
       <div className="rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] p-5">
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-[#cc0000] text-white font-bold flex items-center justify-center text-lg shrink-0">
               {name ? name.charAt(0).toUpperCase() : "A"}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-white">{name || "Studio Administrator"}</h2>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  <ShieldCheck className="w-3 h-3 text-indigo-400" />
-                  Super Admin
+                <h2 className="text-base font-bold text-[#f1f1f1]">
+                  {name || "Studio Administrator"}
+                </h2>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#272727] text-[#aaaaaa] border border-[#383838]">
+                  <ShieldCheck className="w-3 h-3 text-[#aaaaaa]" />
+                  Admin
                 </span>
               </div>
-              <p className="text-sm text-slate-400 mt-0.5">{email}</p>
-              
+              <p className="text-xs text-[#aaaaaa] mt-0.5">{email}</p>
+
               {/* Dynamic Status Badges */}
-              <div className="flex flex-wrap items-center gap-3 mt-3">
-                {/* Google Calendar Status Badge */}
+              <div className="flex flex-wrap items-center gap-2 mt-3">
                 <div
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                    googleCalendarConnected
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                      : googleCalendarEmail
-                      ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                      : "bg-slate-800 text-slate-400 border-white/5"
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
+                    telegramConnected
+                      ? "bg-[#0e2a1b] text-[#4ade80] border-[#164e2d]"
+                      : "bg-[#2a220e] text-[#facc15] border-[#544315]"
                   }`}
                 >
-                  <Calendar className="w-3 h-3" />
+                  <Send className="w-3 h-3" />
                   <span>
-                    Google Calendar:{" "}
-                    {googleCalendarConnected
-                      ? `Live Connected (${googleCalendarEmail})`
-                      : googleCalendarEmail
-                      ? `Setup Required (Feed or API)`
-                      : "Not Linked"}
+                    Telegram Bot: {telegramConnected ? "Connected" : "Setup Required"}
                   </span>
                 </div>
 
-                {/* WhatsApp Status Badge */}
                 <div
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                    whatsappNumber && whatsappEnabled && whatsappApiKey
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                      : whatsappNumber && whatsappEnabled
-                      ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                      : "bg-slate-800 text-slate-400 border-white/5"
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
+                    emailNotifyCustomer
+                      ? "bg-[#0e2a1b] text-[#4ade80] border-[#164e2d]"
+                      : "bg-[#272727] text-[#aaaaaa] border-[#383838]"
                   }`}
                 >
-                  <MessageSquare className="w-3 h-3" />
+                  <Mail className="w-3 h-3" />
                   <span>
-                    WhatsApp Alerts:{" "}
-                    {whatsappNumber && whatsappEnabled && whatsappApiKey
-                      ? `Live Delivery (+${whatsappNumber.replace(/^\+/, "")})`
-                      : whatsappNumber && whatsappEnabled
-                      ? `Simulation Mode (Add Gateway Key for Phone Delivery)`
-                      : "Disabled / Not Set"}
+                    Customer Email:{" "}
+                    {emailNotifyCustomer
+                      ? envDefaults?.emailConfigured
+                        ? "Token Invite Active (Resend Connected)"
+                        : "Token Invite Active (Token Link Mode)"
+                      : "Disabled"}
                   </span>
+                </div>
+
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border bg-[#142330] text-[#38bdf8] border-[#1d3d57]">
+                  <Calendar className="w-3 h-3" />
+                  <span>Google Calendar: Tunnel Feed Ready</span>
                 </div>
               </div>
             </div>
@@ -709,48 +465,31 @@ export default function AdminProfilePage() {
         </div>
       </div>
 
-      {/* Global Alert / Feedback */}
+      {/* Feedback Banner */}
       {feedback && (
         <div
-          className={`flex items-start justify-between gap-3 p-4 rounded-xl border text-sm transition-all ${
+          className={`flex items-start justify-between gap-3 p-4 rounded-xl border text-xs ${
             feedback.type === "success"
-              ? "bg-emerald-950/30 border-emerald-500/30 text-emerald-300"
+              ? "bg-[#0e2a1b] border-[#164e2d] text-[#86efac]"
               : feedback.type === "warning"
-              ? "bg-amber-950/30 border-amber-500/30 text-amber-300"
+              ? "bg-[#2a220e] border-[#544315] text-[#fde047]"
               : feedback.type === "error"
-              ? "bg-rose-950/30 border-rose-500/30 text-rose-300"
-              : "bg-indigo-950/30 border-indigo-500/30 text-indigo-300"
+              ? "bg-[#2e1414] border-[#521c1c] text-[#fca5a5]"
+              : "bg-[#1a1a1a] border-[#2a2a2a] text-[#f1f1f1]"
           }`}
         >
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-2.5">
             {feedback.type === "success" ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-            ) : feedback.type === "warning" ? (
-              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-            ) : feedback.type === "error" ? (
-              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-4 h-4 text-[#4ade80] shrink-0 mt-0.5" />
             ) : (
-              <Sparkles className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             )}
-            <div>
-              <p className="font-medium leading-relaxed">{feedback.message}</p>
-              {feedback.actionUrl && (
-                <a
-                  href={feedback.actionUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg text-xs font-semibold"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  {feedback.actionLabel || "View Action Link"}
-                </a>
-              )}
-            </div>
+            <p className="font-medium leading-relaxed">{feedback.message}</p>
           </div>
           <button
             type="button"
             onClick={() => setFeedback(null)}
-            className="text-slate-400 hover:text-white text-xs cursor-pointer ml-2"
+            className="text-[#aaaaaa] hover:text-[#f1f1f1] text-xs cursor-pointer ml-2 shrink-0"
           >
             Dismiss
           </button>
@@ -758,11 +497,10 @@ export default function AdminProfilePage() {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex border-b border-[#2a2a2a] space-x-1 sm:space-x-4">
+      <div className="flex border-b border-[#2a2a2a] space-x-1 sm:space-x-4 overflow-x-auto no-scrollbar">
         {[
           { id: "alerts", label: "Telegram & Email Alerts", icon: BellRing },
-          { id: "whatsapp", label: "WhatsApp Notifications", icon: MessageSquare },
-          { id: "calendar", label: "Google Calendar & Gmail", icon: Calendar },
+          { id: "calendar", label: "Google Calendar (Tunnel)", icon: Calendar },
           { id: "general", label: "Admin Credentials", icon: User },
           { id: "logs", label: "Notification Logs", icon: History },
         ].map((tab) => {
@@ -773,7 +511,7 @@ export default function AdminProfilePage() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium border-b-2 transition-all cursor-pointer ${
+              className={`flex items-center gap-2 py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                 isActive
                   ? "border-[#f1f1f1] text-[#f1f1f1] font-semibold"
                   : "border-transparent text-[#aaaaaa] hover:text-[#f1f1f1] hover:border-[#383838]"
@@ -786,100 +524,100 @@ export default function AdminProfilePage() {
         })}
       </div>
 
-      <form onSubmit={handleSaveProfile} className="space-y-8">
-        {/* TAB 0: TELEGRAM (ADMIN) & EMAIL (CUSTOMER) ALERTS */}
+      <form onSubmit={handleSaveProfile} className="space-y-6">
+        {/* TAB 0: TELEGRAM (ADMIN) & TOKEN INVITATION EMAIL (CUSTOMER) */}
         {activeTab === "alerts" && (
           <div className="space-y-6">
-            {/* How it works */}
+            {/* How booking notifications work */}
             <div className="p-4 rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] text-xs text-[#aaaaaa] space-y-1.5">
               <div className="flex items-center gap-2 font-semibold text-[#f1f1f1] text-xs uppercase tracking-wider">
                 <BellRing className="w-4 h-4 text-[#ff4e4e]" />
-                <span>Booking Notifications Setup</span>
+                <span>Notification Workflow</span>
               </div>
               <p>
-                <strong className="text-[#f1f1f1]">Studio Admin:</strong> Instant Telegram notification for every new booking, reschedule, and cancellation.
+                <strong className="text-[#f1f1f1]">Admin Role:</strong> Receives all booking notifications exclusively via <strong>Telegram Bot</strong> (new holds, confirmations, reschedules, cancellations).
               </p>
               <p>
-                <strong className="text-[#f1f1f1]">Customer:</strong> Automatic email booking receipt via Resend or 1-click WhatsApp message.
+                <strong className="text-[#f1f1f1]">Customer Role:</strong> Receives a <strong>Token-Based Invitation Email</strong> when their booking is confirmed, listing all booking details and their direct link (<code className="text-[#f1f1f1]">/booking/manage/[token]</code>) to manage their session.
               </p>
             </div>
 
-            {/* TELEGRAM CARD */}
+            {/* TELEGRAM CARD (ADMIN ONLY) */}
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2a2a2a] pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-[#142330] text-[#38bdf8] flex items-center justify-center">
                     <Send className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <h3 className="text-sm sm:text-base font-bold text-[#f1f1f1] flex items-center gap-2">
                       Telegram Admin Alerts
-                      {telegramEnabled && (hasTelegramBotToken || envDefaults?.hasEnvTelegramBotToken) && telegramChatId ? (
-                        <span className="text-[10px] uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                      {telegramConnected ? (
+                        <span className="text-[10px] uppercase font-bold bg-[#0e2a1b] text-[#4ade80] border border-[#164e2d] px-2 py-0.5 rounded-full">
                           Active
                         </span>
                       ) : (
-                        <span className="text-[10px] uppercase font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] uppercase font-bold bg-[#2a220e] text-[#facc15] border border-[#544315] px-2 py-0.5 rounded-full">
                           Not Set Up
                         </span>
                       )}
                     </h3>
-                    <p className="text-xs text-slate-400">
-                      Free, official Telegram Bot API. Takes about 2 minutes.
+                    <p className="text-xs text-[#aaaaaa]">
+                      Direct official Telegram Bot API for all studio admin booking alerts.
                     </p>
                   </div>
                 </div>
-                <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
+                <label className="flex items-center gap-2 text-xs font-medium text-[#f1f1f1] cursor-pointer">
                   <input
                     type="checkbox"
                     checked={telegramEnabled}
                     onChange={(e) => setTelegramEnabled(e.target.checked)}
-                    className="w-4 h-4 rounded bg-slate-800 border-white/10"
+                    className="w-4 h-4 rounded bg-[#121212] border-[#2a2a2a]"
                   />
                   Enable Telegram alerts
                 </label>
               </div>
 
-              {/* Steps */}
+              {/* 3-Step Setup */}
               <ol className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                <li className="bg-[#0b0e17] p-3.5 rounded-lg border border-sky-500/20 space-y-1.5">
-                  <span className="font-bold text-sky-300 block">Step 1: Create your bot</span>
-                  <p className="text-slate-400 text-[11px] leading-relaxed">
-                    In Telegram, open{" "}
-                    <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-sky-400 underline">
+                <li className="bg-[#121212] p-3.5 rounded-xl border border-[#2a2a2a] space-y-1">
+                  <span className="font-semibold text-[#38bdf8] block">Step 1: Create your bot</span>
+                  <p className="text-[#aaaaaa] text-[11px] leading-relaxed">
+                    Open{" "}
+                    <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-[#3ea6ff] underline">
                       @BotFather
-                    </a>
-                    , send <code className="text-sky-300">/newbot</code>, pick a name (e.g. <em>EasyBook Alerts</em>) and a username ending in <code className="text-sky-300">bot</code>.
+                    </a>{" "}
+                    in Telegram, send <code className="text-[#f1f1f1]">/newbot</code>, and pick a bot username ending in <code className="text-[#f1f1f1]">bot</code>.
                   </p>
                 </li>
-                <li className="bg-[#0b0e17] p-3.5 rounded-lg border border-sky-500/20 space-y-1.5">
-                  <span className="font-bold text-sky-300 block">Step 2: Paste the token</span>
-                  <p className="text-slate-400 text-[11px] leading-relaxed">
-                    BotFather replies with a token like{" "}
-                    <code className="text-sky-300 break-all">123456789:AAH...xyz</code>. Paste it below.
+                <li className="bg-[#121212] p-3.5 rounded-xl border border-[#2a2a2a] space-y-1">
+                  <span className="font-semibold text-[#38bdf8] block">Step 2: Paste Bot Token</span>
+                  <p className="text-[#aaaaaa] text-[11px] leading-relaxed">
+                    Copy the token from BotFather (e.g. <code className="text-[#f1f1f1]">123456789:AAH...</code>) and paste it below.
                   </p>
                 </li>
-                <li className="bg-[#0b0e17] p-3.5 rounded-lg border border-sky-500/20 space-y-1.5">
-                  <span className="font-bold text-sky-300 block">Step 3: Say hi &amp; detect</span>
-                  <p className="text-slate-400 text-[11px] leading-relaxed">
-                    Open your new bot{telegramBotUsername ? (
+                <li className="bg-[#121212] p-3.5 rounded-xl border border-[#2a2a2a] space-y-1">
+                  <span className="font-semibold text-[#38bdf8] block">Step 3: Start &amp; Detect</span>
+                  <p className="text-[#aaaaaa] text-[11px] leading-relaxed">
+                    Open your bot
+                    {telegramBotUsername ? (
                       <>
                         {" "}(
-                        <a href={`https://t.me/${telegramBotUsername}`} target="_blank" rel="noreferrer" className="text-sky-400 underline">
+                        <a href={`https://t.me/${telegramBotUsername}`} target="_blank" rel="noreferrer" className="text-[#3ea6ff] underline">
                           @{telegramBotUsername}
                         </a>
                         )
                       </>
                     ) : null}
-                    , press <strong>START</strong>, then click <strong>Detect Chat ID</strong> and <strong>Save Changes</strong>.
+                    , press <strong>START</strong>, then click <strong>Detect Chat ID</strong>.
                   </p>
                 </li>
               </ol>
 
               {/* Inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1.5">
                     Bot Token
                   </label>
                   <input
@@ -887,7 +625,7 @@ export default function AdminProfilePage() {
                     value={telegramBotToken}
                     onChange={(e) => setTelegramBotToken(e.target.value)}
                     autoComplete="off"
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500/60 font-mono"
+                    className="w-full bg-[#121212] border border-[#2a2a2a] rounded-xl px-3.5 py-2.5 text-xs text-[#f1f1f1] placeholder:text-[#717171] focus:outline-none focus:border-[#3ea6ff] font-mono"
                     placeholder={
                       hasTelegramBotToken
                         ? "•••••••• saved (paste a new one to replace)"
@@ -898,7 +636,7 @@ export default function AdminProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1.5">
                     Your Chat ID
                   </label>
                   <div className="flex gap-2">
@@ -906,46 +644,50 @@ export default function AdminProfilePage() {
                       type="text"
                       value={telegramChatId}
                       onChange={(e) => setTelegramChatId(e.target.value)}
-                      className="flex-1 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500/60 font-mono"
+                      className="flex-1 bg-[#121212] border border-[#2a2a2a] rounded-xl px-3.5 py-2.5 text-xs text-[#f1f1f1] placeholder:text-[#717171] focus:outline-none focus:border-[#3ea6ff] font-mono"
                       placeholder="Click Detect →"
                     />
                     <button
                       type="button"
                       onClick={handleDetectChatId}
                       disabled={detectingChatId}
-                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2.5 bg-sky-600/20 hover:bg-sky-600/30 text-sky-200 border border-sky-500/30 rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-50"
+                      className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#272727] hover:bg-[#333333] text-[#f1f1f1] border border-[#383838] rounded-full text-xs font-medium cursor-pointer disabled:opacity-50"
                     >
-                      {detectingChatId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      {detectingChatId ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      )}
                       Detect Chat ID
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Triggers (shared with WhatsApp settings) */}
+              {/* Admin Telegram Trigger Checkboxes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5 cursor-pointer">
+                <label className="flex items-center justify-between p-3.5 rounded-xl bg-[#121212] border border-[#2a2a2a] cursor-pointer">
                   <span>
-                    <span className="text-xs font-semibold text-white block">On booking hold</span>
-                    <span className="text-[11px] text-slate-400">When a customer locks a slot (before payment).</span>
+                    <span className="text-xs font-semibold text-[#f1f1f1] block">On booking hold</span>
+                    <span className="text-[11px] text-[#717171]">Alert Admin when customer locks a slot.</span>
                   </span>
                   <input
                     type="checkbox"
-                    checked={whatsappNotifyOnCheckout}
-                    onChange={(e) => setWhatsappNotifyOnCheckout(e.target.checked)}
-                    className="w-4 h-4 rounded bg-slate-800 border-white/10"
+                    checked={notifyOnHold}
+                    onChange={(e) => setNotifyOnHold(e.target.checked)}
+                    className="w-4 h-4 rounded bg-[#121212] border-[#2a2a2a]"
                   />
                 </label>
-                <label className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5 cursor-pointer">
+                <label className="flex items-center justify-between p-3.5 rounded-xl bg-[#121212] border border-[#2a2a2a] cursor-pointer">
                   <span>
-                    <span className="text-xs font-semibold text-white block">On payment confirmed</span>
-                    <span className="text-[11px] text-slate-400">When payment succeeds. Reschedules &amp; cancellations are always sent.</span>
+                    <span className="text-xs font-semibold text-[#f1f1f1] block">On payment confirmed</span>
+                    <span className="text-[11px] text-[#717171]">Alert Admin when confirmed, rescheduled, or cancelled.</span>
                   </span>
                   <input
                     type="checkbox"
-                    checked={whatsappNotifyOnConfirm}
-                    onChange={(e) => setWhatsappNotifyOnConfirm(e.target.checked)}
-                    className="w-4 h-4 rounded bg-slate-800 border-white/10"
+                    checked={notifyOnConfirm}
+                    onChange={(e) => setNotifyOnConfirm(e.target.checked)}
+                    className="w-4 h-4 rounded bg-[#121212] border-[#2a2a2a]"
                   />
                 </label>
               </div>
@@ -955,77 +697,71 @@ export default function AdminProfilePage() {
                   type="button"
                   onClick={handleTestTelegram}
                   disabled={testingTelegram}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#272727] hover:bg-[#333333] border border-[#383838] text-[#f1f1f1] rounded-full text-xs font-semibold cursor-pointer disabled:opacity-50"
                 >
-                  {testingTelegram ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  {testingTelegram ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5 text-[#38bdf8]" />
+                  )}
                   Send Test Telegram Alert
                 </button>
               </div>
             </div>
 
-            {/* EMAIL CARD */}
-            <div className="bg-[#131622] border border-white/5 rounded-2xl p-6 space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+            {/* CUSTOMER EMAIL INVITATION CARD (TOKEN-BASED INVITATION PATTERN) */}
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2a2a2a] pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-[#2e1823] text-[#f472b6] flex items-center justify-center">
                     <Mail className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      Customer Email Receipts
+                    <h3 className="text-sm sm:text-base font-bold text-[#f1f1f1] flex items-center gap-2">
+                      Customer Token-Based Email Invitations
                       {envDefaults?.emailConfigured ? (
-                        <span className="text-[10px] uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                          API Key Detected
+                        <span className="text-[10px] uppercase font-bold bg-[#0e2a1b] text-[#4ade80] border border-[#164e2d] px-2 py-0.5 rounded-full">
+                          Resend Key Detected
                         </span>
                       ) : (
-                        <span className="text-[10px] uppercase font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] uppercase font-bold bg-[#2a220e] text-[#facc15] border border-[#544315] px-2 py-0.5 rounded-full">
                           Needs RESEND_API_KEY
                         </span>
                       )}
                     </h3>
-                    <p className="text-xs text-slate-400">
-                      Sent through Resend (free tier: 3,000 emails/month).
+                    <p className="text-xs text-[#aaaaaa]">
+                      Automatically emails confirmed customers their booking summary &amp; private token link (<code className="text-[#f1f1f1]">/booking/manage/[token]</code>).
                     </p>
                   </div>
                 </div>
-                <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer">
+                <label className="flex items-center gap-2 text-xs font-medium text-[#f1f1f1] cursor-pointer">
                   <input
                     type="checkbox"
                     checked={emailNotifyCustomer}
                     onChange={(e) => setEmailNotifyCustomer(e.target.checked)}
-                    className="w-4 h-4 rounded bg-slate-800 border-white/10"
+                    className="w-4 h-4 rounded bg-[#121212] border-[#2a2a2a]"
                   />
-                  Email customers automatically
+                  Email customer on confirmation
                 </label>
               </div>
 
-              <ol className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                <li className="bg-[#0b0e17] p-3.5 rounded-lg border border-pink-500/20 space-y-1.5">
-                  <span className="font-bold text-pink-300 block">Step 1: Get an API key</span>
-                  <p className="text-slate-400 text-[11px] leading-relaxed">
-                    Sign up at{" "}
-                    <a href="https://resend.com/signup" target="_blank" rel="noreferrer" className="text-pink-400 underline">
-                      resend.com
-                    </a>{" "}
-                    and create a key under <strong>API Keys</strong>.
-                  </p>
-                </li>
-                <li className="bg-[#0b0e17] p-3.5 rounded-lg border border-pink-500/20 space-y-1.5">
-                  <span className="font-bold text-pink-300 block">Step 2: Add to Vercel</span>
-                  <p className="text-slate-400 text-[11px] leading-relaxed">
-                    Add <code className="text-pink-300">RESEND_API_KEY</code> (and optionally <code className="text-pink-300">EMAIL_FROM</code>) in Vercel → Settings → Environment Variables, then redeploy.
-                  </p>
-                </li>
-                <li className="bg-[#0b0e17] p-3.5 rounded-lg border border-pink-500/20 space-y-1.5">
-                  <span className="font-bold text-pink-300 block">Step 3: Verify your domain</span>
-                  <p className="text-slate-400 text-[11px] leading-relaxed">
-                    Until you verify a domain in Resend, emails can only go to <strong>your own Resend account email</strong>. Verify a domain to email real customers.
-                  </p>
-                </li>
-              </ol>
+              <div className="p-4 rounded-xl bg-[#121212] border border-[#2a2a2a] space-y-2 text-xs text-[#aaaaaa]">
+                <span className="font-semibold text-[#f1f1f1] block">
+                  How the Token-Based Invitation Pattern works:
+                </span>
+                <p className="leading-relaxed">
+                  1. When a booking is confirmed, EasyBook generates a unique passwordless access token (<code className="text-[#f1f1f1]">manageToken</code>) for that customer.
+                </p>
+                <p className="leading-relaxed">
+                  2. An invitation email is sent via Resend containing all photoshoot details (reference, category, package, date, time, RM amount) plus a direct button to their personal booking page.
+                </p>
+                <p className="leading-relaxed">
+                  3. Remember to set <code className="text-[#f1f1f1]">RESEND_API_KEY</code> (and <code className="text-[#f1f1f1]">EMAIL_FROM</code> with a verified domain for external recipients) in your environment variables.
+                </p>
+              </div>
 
-              <div className="text-[11px] text-slate-400">
-                Sending from: <code className="text-slate-200">{envDefaults?.emailFrom || "EasyBook Studio <onboarding@resend.dev>"}</code>
+              <div className="text-[11px] text-[#717171]">
+                Sending from: <code className="text-[#aaaaaa]">{envDefaults?.emailFrom || "EasyBook Studio <onboarding@resend.dev>"}</code>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-end">
@@ -1033,509 +769,87 @@ export default function AdminProfilePage() {
                   type="email"
                   value={testEmailTo}
                   onChange={(e) => setTestEmailTo(e.target.value)}
-                  className="sm:w-72 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-pink-500/60"
-                  placeholder="Send test to..."
+                  className="sm:w-72 bg-[#121212] border border-[#2a2a2a] rounded-full px-4 py-2 text-xs text-[#f1f1f1] placeholder:text-[#717171] focus:outline-none focus:border-[#3ea6ff]"
+                  placeholder="Send test invitation to..."
                 />
                 <button
                   type="button"
                   onClick={handleTestEmail}
                   disabled={testingEmail}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-600 hover:bg-pink-500 text-white rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#272727] hover:bg-[#333333] border border-[#383838] text-[#f1f1f1] rounded-full text-xs font-semibold cursor-pointer disabled:opacity-50"
                 >
-                  {testingEmail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-                  Send Test Email
+                  {testingEmail ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Mail className="w-3.5 h-3.5 text-[#f472b6]" />
+                  )}
+                  Send Test Token Email
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 1: WHATSAPP NOTIFICATIONS */}
-        {activeTab === "whatsapp" && (
-          <div className="space-y-6">
-            <div className="bg-[#131622] border border-white/5 rounded-2xl p-6 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                    <MessageSquare className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      WhatsApp Booking Notification Alerts
-                      {whatsappApiKey ? (
-                        <span className="text-[10px] uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                          Live Active
-                        </span>
-                      ) : (
-                        <span className="text-[10px] uppercase font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full">
-                          Simulation Mode
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      Receive instant WhatsApp notifications whenever a customer adds or confirms a photoshoot booking.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleTestWhatsApp}
-                    disabled={testingWhatsApp}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-semibold transition cursor-pointer disabled:opacity-50"
-                  >
-                    {testingWhatsApp ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Sending Alert...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-3.5 h-3.5 text-emerald-400" />
-                        Send Test WhatsApp Alert
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* WhatsApp Setup Guide & Options */}
-              <div className="bg-gradient-to-br from-emerald-950/40 to-slate-900 border border-emerald-500/30 rounded-xl p-5 space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2 text-emerald-300 font-bold text-sm">
-                    <Sparkles className="w-4 h-4 text-emerald-400" />
-                    <span>How WhatsApp Notifications Work in EasyBook (Choose Your Preferred Method):</span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider">
-                    Guide &amp; Options
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  EasyBook supports <strong>3 simple ways</strong> to send WhatsApp booking notifications. You can use free CallMeBot for admin phone alerts, use Fonnte for automatic customer+admin messaging, or use zero-setup 1-Click WhatsApp!
-                </p>
-
-                {/* 3 Choice Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                  {/* Option 1: 1-Click WhatsApp (Zero Setup) */}
-                  <div className="bg-[#0b0e17] p-3.5 rounded-lg border border-white/10 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-white block">Option 1: 1-Click WhatsApp</span>
-                      <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-semibold">Zero Setup</span>
-                    </div>
-                    <p className="text-slate-400 text-[11px] leading-relaxed">
-                      No API key or bots required! In <strong>Notifications</strong> (<Link href="/admin/notifications" className="text-indigo-400 underline">here</Link>) and <strong>Calendar</strong>, every booking has a green <strong>&ldquo;Send via WhatsApp&rdquo;</strong> button that opens WhatsApp with customer receipt pre-typed.
-                    </p>
-                  </div>
-
-                  {/* Option 2: CallMeBot (Free Admin Alerts) */}
-                  <div className="bg-[#0b0e17] p-3.5 rounded-lg border border-emerald-500/30 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-emerald-400 block">Option 2: CallMeBot Bot</span>
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-semibold">100% Free</span>
-                    </div>
-                    <p className="text-slate-400 text-[11px] leading-relaxed">
-                      Sends automated notifications to <strong>YOUR personal phone</strong> whenever a customer books or pays. Setup takes 30 seconds below.
-                    </p>
-                  </div>
-
-                  {/* Option 3: Fonnte (Malaysia Gateway) */}
-                  <div className="bg-[#0b0e17] p-3.5 rounded-lg border border-white/10 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-amber-300 block">Option 3: Fonnte Gateway</span>
-                      <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-semibold">Full Auto</span>
-                    </div>
-                    <p className="text-slate-400 text-[11px] leading-relaxed">
-                      Popular in Malaysia (<a href="https://fonnte.com" target="_blank" rel="noreferrer" className="text-amber-400 underline">fonnte.com</a>). Link your WhatsApp via QR code to automatically send WhatsApp messages to <strong>BOTH Admin AND Customers</strong>!
-                    </p>
-                  </div>
-                </div>
-
-                {/* Detailed CallMeBot Step-by-Step Instructions */}
-                <div className="bg-[#090c14] border border-emerald-500/20 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-300">
-                    <MessageSquare className="w-4 h-4 text-emerald-400" />
-                    <span>How to set up CallMeBot for Admin alerts (Step-by-Step):</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                    <div className="space-y-1.5">
-                      <span className="font-semibold text-slate-200 block text-[11px]">
-                        1. Send message to CallMeBot on WhatsApp:
-                      </span>
-                      <p className="text-slate-400 text-[11px]">
-                        From your WhatsApp ({whatsappNumber || "+60189779241"}), click the button below to message the bot:
-                      </p>
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        <a
-                          href={callMeBotActivationUrl1}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold text-xs transition"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          Message Bot #1 (+34 644 26 33 77)
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                        <a
-                          href={callMeBotActivationUrl2}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 rounded-lg font-semibold text-xs transition border border-white/10"
-                        >
-                          Backup Bot #2 (+34 644 20 54 84)
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                      <p className="text-slate-500 text-[10px] mt-1">
-                        Text to send: <code className="text-emerald-300 bg-black/40 px-1 py-0.5 rounded">I allow callmebot to send me messages</code>
-                      </p>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <span className="font-semibold text-slate-200 block text-[11px]">
-                        2. Copy the API Key you receive:
-                      </span>
-                      <p className="text-slate-400 text-[11px]">
-                        CallMeBot will reply within 30 seconds with your numeric key:
-                      </p>
-                      <div className="bg-black/40 p-2 rounded text-[11px] font-mono text-emerald-300 border border-emerald-500/20">
-                        &ldquo;API Activated. Your APIKEY is: <strong>123456</strong>&rdquo;
-                      </div>
-                      <p className="text-slate-400 text-[11px]">
-                        3. Paste that number in <strong>Gateway API Key</strong> below, then click <strong>Save Changes</strong> &amp; <strong>Send Test WhatsApp Alert</strong>!
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* WhatsApp Inputs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Admin WhatsApp Number (with Country Code)
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-                    <input
-                      type="text"
-                      value={whatsappNumber}
-                      onChange={(e) => setWhatsappNumber(e.target.value)}
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/60 font-mono"
-                      placeholder="e.g. +60189779241"
-                    />
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    Always include your country code (+60 for Malaysia, +62 for Indonesia, +1 for US).
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    WhatsApp Gateway Provider
-                  </label>
-                  <select
-                    value={whatsappProvider}
-                    onChange={(e) => setWhatsappProvider(e.target.value)}
-                    className="w-full bg-[#131622] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/60"
-                  >
-                    <option value="callmebot">CallMeBot (100% Free Personal Alerts - Recommended)</option>
-                    <option value="fonnte">Fonnte (Malaysia &amp; Indonesia Gateway)</option>
-                    <option value="custom">Custom Webhook in .env (WHATSAPP_API_URL)</option>
-                  </select>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    Select your delivery gateway for sending real messages.
-                  </p>
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Gateway API Key / Token
-                  </label>
-                  <input
-                    type="password"
-                    value={whatsappApiKey}
-                    onChange={(e) => setWhatsappApiKey(e.target.value)}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/60 font-mono"
-                    placeholder="Paste the CallMeBot API Key received on WhatsApp (e.g. 1234567) or Fonnte token"
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    {whatsappApiKey
-                      ? "✅ API Key configured. Real WhatsApp alerts will be delivered directly to your device."
-                      : "⚠️ Without an API key, alerts will be simulated in the audit log. Add a CallMeBot key above to receive real alerts on your phone."}
-                  </p>
-                </div>
-              </div>
-
-              {/* Notification Toggles */}
-              <div className="border-t border-white/5 pt-4 space-y-3">
-                <span className="text-xs font-bold text-slate-300 block">
-                  Notification Triggers (Admin &amp; Customer)
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
-                    <div>
-                      <span className="text-xs font-semibold text-white block">
-                        Admin: On Booking Hold
-                      </span>
-                      <span className="text-[11px] text-slate-400">
-                        Notify Admin when customer locks a slot.
-                      </span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={whatsappNotifyOnCheckout}
-                      onChange={(e) => setWhatsappNotifyOnCheckout(e.target.checked)}
-                      className="w-4 h-4 text-emerald-600 rounded bg-slate-800 border-white/10"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
-                    <div>
-                      <span className="text-xs font-semibold text-white block">
-                        Admin: On Payment Confirmed
-                      </span>
-                      <span className="text-[11px] text-slate-400">
-                        Notify Admin once payment succeeds.
-                      </span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={whatsappNotifyOnConfirm}
-                      onChange={(e) => setWhatsappNotifyOnConfirm(e.target.checked)}
-                      className="w-4 h-4 text-emerald-600 rounded bg-slate-800 border-white/10"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
-                    <div>
-                      <span className="text-xs font-semibold text-white block">
-                        Customer: Booking Receipt
-                      </span>
-                      <span className="text-[11px] text-slate-400">
-                        Notify Customer on WhatsApp when booking/confirmed.
-                      </span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={whatsappNotifyCustomer}
-                      onChange={(e) => setWhatsappNotifyCustomer(e.target.checked)}
-                      className="w-4 h-4 text-emerald-600 rounded bg-slate-800 border-white/10"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Message Template Preview */}
-              <div className="border-t border-[#2a2a2a] pt-4 space-y-2">
-                <span className="text-xs font-semibold text-[#aaaaaa] flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-[#4ade80]" />
-                  Message Template Preview:
-                </span>
-                <div className="max-w-md bg-[#121212] p-4 rounded-xl border border-[#2a2a2a] font-mono text-[11px] text-[#aaaaaa] space-y-1">
-                  <p className="text-[#f1f1f1] font-semibold">EasyBook: New Booking Received</p>
-                  <p>Client: Azfar (+60189779241)</p>
-                  <p>Service: Studio Editorial &amp; Fashion</p>
-                  <p>Date &amp; Time: 24 Oct 2026, 02:00 PM</p>
-                  <p>Amount: RM 580.00</p>
-                  <p className="text-[#facc15]">Status: Pending Payment (Hold)</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: GOOGLE CALENDAR & GMAIL */}
+        {/* TAB 2: GOOGLE CALENDAR (TUNNEL / FEED URL ONLY) */}
         {activeTab === "calendar" && (
           <div className="space-y-6">
-            {/* Localhost Explanation Alert */}
-            <div className="p-4 rounded-xl bg-[#202020] border border-[#2a2a2a] text-[#aaaaaa] text-xs space-y-2">
-              <div className="flex items-center gap-2 font-semibold text-[#f1f1f1] text-xs uppercase tracking-wider">
-                <AlertCircle className="w-4 h-4 text-[#facc15] shrink-0" />
-                <span>Google Calendar Sync Notice</span>
-              </div>
-              <p className="leading-relaxed">
-                When running on localhost, Google cloud servers cannot reach your local machine. Use Option 1 (Download .ics) or Option 2 (1-Click Google Calendar event link) to sync directly. In production with a public URL, live subscription feeds work automatically.
-              </p>
-            </div>
-
-            {/* OPTION 1: DOWNLOAD & IMPORT .ICS */}
-            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-5 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                    <Download className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      Option 1: Download &amp; Import (.ics File)
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider">
-                        Works 100% on Localhost
-                      </span>
-                    </h3>
-                    <p className="text-xs text-slate-300">
-                      Download your photoshoot schedule file and import it directly into your Google Calendar on <strong>{googleCalendarEmail || "your Gmail"}</strong>.
-                    </p>
-                  </div>
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 space-y-5">
+              <div className="flex items-center gap-3 border-b border-[#2a2a2a] pb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#142330] text-[#38bdf8] flex items-center justify-center">
+                  <Globe className="w-5 h-5" />
                 </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <a
-                    href="/api/calendar/feed?download=true"
-                    download="easybook-schedule.ics"
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md transition"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    Download Calendar (.ics)
-                  </a>
-                  <a
-                    href="https://calendar.google.com/calendar/r/settings/export"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold shadow-md transition"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Open Google Calendar Import
-                  </a>
+                <div>
+                  <h3 className="text-base font-bold text-[#f1f1f1]">
+                    Google Calendar Auto-Sync (Tunnel / Feed URL)
+                  </h3>
+                  <p className="text-xs text-[#aaaaaa]">
+                    Subscribe your Google Calendar directly to your live photoshoot feed via a public tunnel URL or production domain.
+                  </p>
                 </div>
               </div>
 
-              {/* 3-Step Guide for Import */}
-              <div className="bg-[#0b0e17] p-4 rounded-xl border border-white/5 space-y-2 text-xs text-slate-300">
-                <span className="font-bold text-white block">Simple 2-Step Import:</span>
-                <ol className="list-decimal list-inside space-y-1.5 text-slate-300 leading-relaxed">
-                  <li>
-                    Click the green <strong>&quot;Download Calendar (.ics)&quot;</strong> button above to save your photoshoot bookings file.
-                  </li>
-                  <li>
-                    Click <strong>&quot;Open Google Calendar Import&quot;</strong>, select the downloaded file, choose your calendar (<code>{googleCalendarEmail || "haziqamani579@gmail.com"}</code>), and click <strong>&quot;Import&quot;</strong>.
-                  </li>
-                  <li>
-                    <strong>Done!</strong> All your sessions appear in Google Calendar immediately across your phone and laptop!
-                  </li>
-                </ol>
-              </div>
-            </div>
-
-            {/* OPTION 2: 1-CLICK ADD RECENT BOOKINGS TO GOOGLE CALENDAR */}
-            <div className="bg-[#131622] border border-white/5 rounded-2xl p-6 space-y-4">
-              <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-                    <CalendarPlus className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-white">
-                      Option 2: 1-Click Add Bookings to Google Calendar
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      Click below to immediately open and save any photoshoot reservation into your Google Calendar.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {recentBookings.length === 0 ? (
-                <p className="text-xs text-slate-500 py-4 text-center">No bookings found yet.</p>
-              ) : (
-                <div className="space-y-2.5">
-                  {recentBookings.map((b) => {
-                    const startD = new Date(b.startTime);
-                    const endD = new Date(b.endTime);
-                    const formatUtc = (d: Date) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
-                    const dates = `${formatUtc(startD)}/${formatUtc(endD)}`;
-                    const title = `Photoshoot: ${b.clientName} - ${b.service.name}`;
-                    const details = `Client: ${b.clientName}\nPhone: ${b.clientPhone}\nEmail: ${b.clientEmail}\nService: ${b.service.name}`;
-                    const addUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${dates}&details=${encodeURIComponent(details)}&location=Studio`;
-
-                    return (
-                      <div
-                        key={b.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition"
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-white text-xs sm:text-sm">{b.clientName}</span>
-                            <span className="text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">
-                              {b.service.name}
-                            </span>
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                                b.status === "CONFIRMED"
-                                  ? "bg-emerald-500/10 text-emerald-400"
-                                  : "bg-amber-500/10 text-amber-400"
-                              }`}
-                            >
-                              {b.status}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
-                            <Clock className="w-3 h-3 text-slate-500" />
-                            {startD.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })} at {startD.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                          </p>
-                        </div>
-
-                        <a
-                          href={addUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-white border border-blue-500/30 rounded-xl text-xs font-semibold transition shrink-0"
-                        >
-                          <CalendarPlus className="w-3.5 h-3.5 text-blue-400" />
-                          Add to Google Calendar
-                          <ExternalLink className="w-3 h-3 ml-0.5 opacity-60" />
-                        </a>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* OPTION 3: FOR DEPLOYED WEBSITES (OR LOCALTUNNEL) */}
-            <div className="bg-[#131622] border border-white/5 rounded-2xl p-6 space-y-4">
-              <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
-                    <Globe className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-white">
-                      Option 3: Auto-Sync via &quot;From URL&quot; (Production &amp; Tunnels)
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      When your website is deployed live on a public domain, Google Calendar can automatically subscribe and update in the background.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
+              {/* Optional Tunnel Public URL Override */}
               <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-300">
-                  Your Calendar Subscription Feed URL:
+                <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider">
+                  Tunnel Public URL (Optional — e.g. from localtunnel or ngrok)
                 </label>
-                <div className="flex items-center gap-2 bg-[#0a0d16] p-2.5 rounded-xl border border-white/10">
+                <input
+                  type="url"
+                  value={tunnelBaseUrl}
+                  onChange={(e) => setTunnelBaseUrl(e.target.value)}
+                  placeholder="https://your-subdomain.loca.lt"
+                  className="w-full bg-[#121212] border border-[#2a2a2a] rounded-xl px-3.5 py-2.5 text-xs text-[#f1f1f1] placeholder:text-[#717171] font-mono focus:outline-none focus:border-[#3ea6ff]"
+                />
+                <p className="text-[11px] text-[#717171]">
+                  Paste your active tunnel address here to automatically build your public Google Calendar subscription link below.
+                </p>
+              </div>
+
+              {/* Generated Calendar Subscription Feed URL */}
+              <div className="space-y-2">
+                <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider">
+                  Calendar Subscription Feed URL
+                </label>
+                <div className="flex items-center gap-2 bg-[#121212] p-2.5 rounded-xl border border-[#2a2a2a]">
                   <input
                     type="text"
                     readOnly
-                    value={calendarFeedUrl || `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/calendar/feed`}
-                    className="w-full bg-transparent text-xs text-blue-200 font-mono focus:outline-none"
+                    value={effectiveFeedUrl}
+                    className="w-full bg-transparent text-xs text-[#38bdf8] font-mono focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={copyFeedUrl}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold transition shrink-0 cursor-pointer"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#272727] hover:bg-[#333333] text-[#f1f1f1] rounded-full text-xs font-semibold transition shrink-0 cursor-pointer border border-[#383838]"
                   >
                     {copiedFeedUrl ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-emerald-400">Copied!</span>
+                        <Check className="w-3.5 h-3.5 text-[#4ade80]" />
+                        <span className="text-[#4ade80]">Copied</span>
                       </>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-3.5 h-3.5 text-[#aaaaaa]" />
                         <span>Copy URL</span>
                       </>
                     )}
@@ -1543,135 +857,22 @@ export default function AdminProfilePage() {
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 text-xs text-slate-400 space-y-2">
-                <span className="font-semibold text-white block">
-                  Want to test &quot;From URL&quot; on localhost right now?
+              {/* 3-Step Tunnel Setup Instructions */}
+              <div className="p-4 rounded-xl bg-[#121212] border border-[#2a2a2a] text-xs text-[#aaaaaa] space-y-2.5">
+                <span className="font-semibold text-[#f1f1f1] block">
+                  How to connect via Tunnel in Google Calendar:
                 </span>
-                <p>
-                  Run this command in a new terminal window to give localhost a temporary public URL:
-                </p>
-                <code className="block bg-black/40 px-3 py-1.5 rounded text-indigo-300 font-mono text-[11px]">
-                  npx localtunnel --port 3000
-                </code>
-                <p>
-                  Then copy the generated <code>https://...loca.lt</code> address and append <code>/api/calendar/feed?token=...</code> to paste into Google Calendar.
-                </p>
-              </div>
-            </div>
-
-            {/* Direct Google Cloud API Sync (Optional) */}
-            <div className="bg-[#131622] border border-white/5 rounded-2xl p-6 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-white">
-                      Google Service Account Direct API (Advanced)
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      If you want EasyBook to programmatically create events directly via Google Cloud Calendar API (v3).
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleTestCalendar}
-                  disabled={testingCalendar}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 hover:text-white border border-purple-500/30 rounded-xl text-xs font-semibold transition cursor-pointer disabled:opacity-50"
-                >
-                  {testingCalendar ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Testing API...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                      Test Google API Connection
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Your Real Gmail Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-                    <input
-                      type="email"
-                      value={googleCalendarEmail}
-                      onChange={(e) => setGoogleCalendarEmail(e.target.value)}
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60"
-                      placeholder="e.g. haziqamani579@gmail.com"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Target Google Calendar ID
-                  </label>
-                  <input
-                    type="text"
-                    value={googleCalendarId}
-                    onChange={(e) => setGoogleCalendarId(e.target.value)}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60"
-                    placeholder="Leave blank to default to your Gmail address"
-                  />
-                </div>
-              </div>
-
-              {/* Service Account Setup Instructions */}
-              <div className="border-t border-white/5 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedCredentials(!showAdvancedCredentials)}
-                  className="flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer"
-                >
-                  {showAdvancedCredentials ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  <span>Configure Google Cloud Service Account &amp; RSA Key (Optional)</span>
-                </button>
-
-                {showAdvancedCredentials && (
-                  <div className="mt-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-4">
-                    <div className="text-xs text-slate-400 space-y-2">
-                      <p>
-                        To use direct backend API event creation, you must create a Service Account in the Google Cloud Console, share your Google Calendar with the Service Account email, and paste its credentials below:
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Google Cloud Service Account Email
-                      </label>
-                      <input
-                        type="text"
-                        value={googleServiceAccountEmail}
-                        onChange={(e) => setGoogleServiceAccountEmail(e.target.value)}
-                        className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2 text-xs text-white placeholder:text-slate-600 font-mono"
-                        placeholder="your-service-account@project.iam.gserviceaccount.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Google RSA Private Key (PEM format)
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={googlePrivateKey}
-                        onChange={(e) => setGooglePrivateKey(e.target.value)}
-                        className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2 text-xs text-white placeholder:text-slate-600 font-mono"
-                        placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"
-                      />
-                    </div>
-                  </div>
-                )}
+                <ol className="list-decimal list-inside space-y-1.5 leading-relaxed">
+                  <li>
+                    Run <code className="bg-[#1a1a1a] px-2 py-0.5 rounded text-[#f1f1f1] border border-[#2a2a2a]">npx localtunnel --port 3000</code> in your terminal to expose localhost publicly.
+                  </li>
+                  <li>
+                    Paste the generated <code className="text-[#f1f1f1]">https://...loca.lt</code> URL into the <strong>Tunnel Public URL</strong> field above and click <strong>Copy URL</strong>.
+                  </li>
+                  <li>
+                    Open <strong>Google Calendar → Settings → Add calendar → From URL</strong> and paste the copied feed URL.
+                  </li>
+                </ol>
               </div>
             </div>
           </div>
@@ -1680,24 +881,22 @@ export default function AdminProfilePage() {
         {/* TAB 3: ADMIN CREDENTIALS */}
         {activeTab === "general" && (
           <div className="space-y-6">
-            <div className="bg-[#131622] border border-white/5 rounded-2xl p-6 space-y-6">
-              <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-                    <User className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-white">Profile Information</h3>
-                    <p className="text-xs text-slate-400">
-                      Update your administrator name and login credentials.
-                    </p>
-                  </div>
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 space-y-5">
+              <div className="flex items-center gap-3 border-b border-[#2a2a2a] pb-4">
+                <div className="w-9 h-9 rounded-xl bg-[#272727] text-[#f1f1f1] flex items-center justify-center">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#f1f1f1]">Profile Information</h3>
+                  <p className="text-xs text-[#aaaaaa]">
+                    Update your administrator name and login credentials.
+                  </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1.5">
                     Full Name
                   </label>
                   <input
@@ -1705,13 +904,13 @@ export default function AdminProfilePage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60"
+                    className="w-full bg-[#121212] border border-[#2a2a2a] rounded-xl px-3.5 py-2.5 text-xs text-[#f1f1f1] placeholder:text-[#717171] focus:outline-none focus:border-[#3ea6ff]"
                     placeholder="e.g. Studio Administrator"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1.5">
                     Admin Login Email
                   </label>
                   <input
@@ -1719,20 +918,20 @@ export default function AdminProfilePage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60"
+                    className="w-full bg-[#121212] border border-[#2a2a2a] rounded-xl px-3.5 py-2.5 text-xs text-[#f1f1f1] placeholder:text-[#717171] focus:outline-none focus:border-[#3ea6ff]"
                     placeholder="admin@easybook.com"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1.5">
                     Studio Contact Phone Number
                   </label>
                   <input
                     type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60"
+                    className="w-full bg-[#121212] border border-[#2a2a2a] rounded-xl px-3.5 py-2.5 text-xs text-[#f1f1f1] placeholder:text-[#717171] focus:outline-none focus:border-[#3ea6ff]"
                     placeholder="e.g. +60189779241"
                   />
                 </div>
@@ -1740,55 +939,55 @@ export default function AdminProfilePage() {
             </div>
 
             {/* Change Password Card */}
-            <div className="bg-[#131622] border border-white/5 rounded-2xl p-6 space-y-6">
-              <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-                <div className="w-9 h-9 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center">
-                  <KeyRound className="w-5 h-5" />
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 space-y-5">
+              <div className="flex items-center gap-3 border-b border-[#2a2a2a] pb-4">
+                <div className="w-9 h-9 rounded-xl bg-[#272727] text-[#ff4e4e] flex items-center justify-center">
+                  <KeyRound className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Security &amp; Password</h3>
-                  <p className="text-xs text-slate-400">
+                  <h3 className="text-base font-bold text-[#f1f1f1]">Security &amp; Password</h3>
+                  <p className="text-xs text-[#aaaaaa]">
                     Leave blank if you do not wish to change your admin password.
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1.5">
                     Current Password
                   </label>
                   <input
                     type="password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60"
+                    className="w-full bg-[#121212] border border-[#2a2a2a] rounded-xl px-3.5 py-2.5 text-xs text-[#f1f1f1] placeholder:text-[#717171] focus:outline-none focus:border-[#3ea6ff]"
                     placeholder="••••••••"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1.5">
                     New Password
                   </label>
                   <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60"
+                    className="w-full bg-[#121212] border border-[#2a2a2a] rounded-xl px-3.5 py-2.5 text-xs text-[#f1f1f1] placeholder:text-[#717171] focus:outline-none focus:border-[#3ea6ff]"
                     placeholder="Min 6 characters"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-[11px] font-semibold text-[#aaaaaa] uppercase tracking-wider mb-1.5">
                     Confirm New Password
                   </label>
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60"
+                    className="w-full bg-[#121212] border border-[#2a2a2a] rounded-xl px-3.5 py-2.5 text-xs text-[#f1f1f1] placeholder:text-[#717171] focus:outline-none focus:border-[#3ea6ff]"
                     placeholder="Confirm new password"
                   />
                 </div>
@@ -1799,16 +998,16 @@ export default function AdminProfilePage() {
 
         {/* TAB 4: NOTIFICATION LOGS */}
         {activeTab === "logs" && (
-          <div className="bg-[#131622] border border-white/5 rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#2a2a2a] pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
-                  <History className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-[#272727] text-[#aaaaaa] flex items-center justify-center">
+                  <History className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Recent Notification &amp; Sync Logs</h3>
-                  <p className="text-xs text-slate-400">
-                    Audit trail showing status: <strong>SENT</strong> (Live phone delivery), <strong>SIMULATED</strong> (Logged without gateway key), or <strong>FAILED</strong>.
+                  <h3 className="text-base font-bold text-[#f1f1f1]">Recent Notification Logs</h3>
+                  <p className="text-xs text-[#aaaaaa]">
+                    Audit trail of Telegram admin alerts and Customer Token-Based Email invitations.
                   </p>
                 </div>
               </div>
@@ -1816,7 +1015,7 @@ export default function AdminProfilePage() {
               <button
                 type="button"
                 onClick={() => loadProfile(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg text-xs font-medium cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#272727] hover:bg-[#333333] text-[#f1f1f1] rounded-full text-xs font-medium cursor-pointer border border-[#383838]"
               >
                 <RefreshCw className="w-3 h-3" />
                 Reload
@@ -1824,13 +1023,13 @@ export default function AdminProfilePage() {
             </div>
 
             {logs.length === 0 ? (
-              <div className="text-center py-12 text-slate-500 text-xs">
-                No notification logs recorded yet. Send a test WhatsApp message or simulate a booking to see activity.
+              <div className="text-center py-12 text-[#717171] text-xs">
+                No notification logs recorded yet.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-white/[0.02] text-slate-400 border-b border-white/5">
+                  <thead className="bg-[#141414] text-[#717171] border-b border-[#2a2a2a] uppercase text-[11px]">
                     <tr>
                       <th className="py-2.5 px-3 font-semibold">Timestamp</th>
                       <th className="py-2.5 px-3 font-semibold">Channel</th>
@@ -1840,50 +1039,54 @@ export default function AdminProfilePage() {
                       <th className="py-2.5 px-3 font-semibold">Message Preview</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5 text-slate-300">
+                  <tbody className="divide-y divide-[#222222] text-[#aaaaaa]">
                     {logs.map((log) => {
                       const dateStr = new Date(log.createdAt).toLocaleString();
                       return (
-                        <tr key={log.id} className="hover:bg-white/[0.02]">
-                          <td className="py-3 px-3 whitespace-nowrap text-slate-400 font-mono text-[11px]">
+                        <tr key={log.id} className="hover:bg-[#202020]">
+                          <td className="py-3 px-3 whitespace-nowrap text-[#717171] font-mono text-[11px]">
                             {dateStr}
                           </td>
                           <td className="py-3 px-3 whitespace-nowrap">
                             <span
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${
-                                log.channel === "WHATSAPP"
-                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                  : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                                log.channel === "TELEGRAM"
+                                  ? "bg-[#142330] text-[#38bdf8] border-[#1d3d57]"
+                                  : log.channel === "EMAIL"
+                                  ? "bg-[#2e1823] text-[#f472b6] border-[#4c2236]"
+                                  : "bg-[#272727] text-[#aaaaaa] border-[#383838]"
                               }`}
                             >
-                              {log.channel === "WHATSAPP" ? (
-                                <MessageSquare className="w-2.5 h-2.5" />
+                              {log.channel === "TELEGRAM" ? (
+                                <Send className="w-2.5 h-2.5" />
+                              ) : log.channel === "EMAIL" ? (
+                                <Mail className="w-2.5 h-2.5" />
                               ) : (
                                 <Calendar className="w-2.5 h-2.5" />
                               )}
                               {log.channel}
                             </span>
                           </td>
-                          <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px] text-slate-300">
+                          <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px] text-[#f1f1f1]">
                             {log.eventType}
                           </td>
-                          <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px] text-slate-400">
+                          <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px] text-[#aaaaaa]">
                             {log.recipient}
                           </td>
                           <td className="py-3 px-3 whitespace-nowrap">
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                 log.status === "SENT" || log.status === "DELIVERED"
-                                  ? "bg-emerald-500/20 text-emerald-300"
+                                  ? "bg-[#0e2a1b] text-[#4ade80]"
                                   : log.status === "SIMULATED"
-                                  ? "bg-amber-500/20 text-amber-300"
-                                  : "bg-rose-500/20 text-rose-300"
+                                  ? "bg-[#2a220e] text-[#facc15]"
+                                  : "bg-[#2e1414] text-[#f87171]"
                               }`}
                             >
-                              {log.status === "SENT" ? "LIVE DELIVERED" : log.status}
+                              {log.status}
                             </span>
                           </td>
-                          <td className="py-3 px-3 max-w-xs truncate text-slate-400" title={log.message}>
+                          <td className="py-3 px-3 max-w-xs truncate text-[#aaaaaa]" title={log.message}>
                             {log.message}
                           </td>
                         </tr>

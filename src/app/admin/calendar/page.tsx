@@ -33,12 +33,9 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
-  MessageSquare,
-  Download,
   RefreshCw,
   Loader2,
   X,
-  CalendarPlus,
   Send,
   Layers,
   Sliders,
@@ -117,11 +114,10 @@ function AdminCalendarView() {
   const [rescheduleMode, setRescheduleMode] = useState(false);
   const [newDateTime, setNewDateTime] = useState("");
   const [isUpdatingBooking, setIsUpdatingBooking] = useState(false);
-  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [modalFeedback, setModalFeedback] = useState<{
     type: "success" | "error";
     text: string;
-    directUrl?: string;
   } | null>(null);
 
   const loadCalendarData = async (quiet = false) => {
@@ -281,7 +277,7 @@ function AdminCalendarView() {
       setSelectedBooking(data.booking);
       setModalFeedback({
         type: "success",
-        text: `Booking status updated to ${status} and WhatsApp notifications dispatched!`,
+        text: `Booking status updated to ${status}.`,
       });
     } catch (err) {
       setModalFeedback({
@@ -318,7 +314,7 @@ function AdminCalendarView() {
       setRescheduleMode(false);
       setModalFeedback({
         type: "success",
-        text: "Session rescheduled & updated on calendar and WhatsApp!",
+        text: "Session rescheduled and calendar updated!",
       });
     } catch (err) {
       setModalFeedback({
@@ -330,10 +326,10 @@ function AdminCalendarView() {
     }
   };
 
-  // Send WhatsApp Notification to both Customer and Admin for selected booking
-  const handleDispatchWhatsApp = async (role: "BOTH" | "CUSTOMER" | "ADMIN") => {
+  // Send Token-Based Confirmation Email to Customer for selected booking
+  const handleSendConfirmationEmail = async () => {
     if (!selectedBooking) return;
-    setIsSendingWhatsApp(true);
+    setIsSendingEmail(true);
     setModalFeedback(null);
     try {
       const res = await fetch("/api/admin/notifications", {
@@ -342,23 +338,19 @@ function AdminCalendarView() {
         body: JSON.stringify({
           action: "send_booking_alert",
           bookingId: selectedBooking.id,
-          recipientRole: role,
-          eventType:
-            selectedBooking.status === "CONFIRMED"
-              ? "BOOKING_CONFIRMED"
-              : "BOOKING_CREATED",
+          recipientRole: "CUSTOMER",
+          eventType: "BOOKING_CONFIRMED",
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to send WhatsApp");
+      if (!res.ok) throw new Error(data.error || "Failed to send confirmation email");
 
       setModalFeedback({
         type: "success",
         text:
-          role === "BOTH"
-            ? "WhatsApp notification sent & logged for both Customer and Admin!"
-            : `WhatsApp notification dispatched to ${role}!`,
-        directUrl: data.directUrl,
+          data.status === "SIMULATED"
+            ? "Token-based invitation generated & logged (configure verified domain in Resend to send externally)."
+            : "Confirmation email with booking link sent to customer!",
       });
     } catch (err) {
       setModalFeedback({
@@ -366,10 +358,10 @@ function AdminCalendarView() {
         text:
           err instanceof Error
             ? err.message
-            : "Failed to dispatch WhatsApp notification",
+            : "Failed to dispatch confirmation email",
       });
     } finally {
-      setIsSendingWhatsApp(false);
+      setIsSendingEmail(false);
     }
   };
 
@@ -494,16 +486,6 @@ function AdminCalendarView() {
               className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
             />
           </button>
-
-          <a
-            href="/api/calendar/feed?download=true"
-            download="easybook-schedule.ics"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition"
-            title="Download .ics for Google Calendar"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Export .ics</span>
-          </a>
         </div>
       </div>
 
@@ -1139,30 +1121,18 @@ function AdminCalendarView() {
             <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
               {modalFeedback && (
                 <div
-                  className={`p-3.5 rounded-xl border text-xs flex items-center justify-between gap-3 ${
+                  className={`p-3.5 rounded-xl border text-xs flex items-center gap-2 ${
                     modalFeedback.type === "success"
-                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-                      : "bg-rose-500/10 border-rose-500/30 text-rose-300"
+                      ? "bg-[#0e2a1b] border-[#164e2d] text-[#86efac]"
+                      : "bg-[#2e1414] border-[#521c1c] text-[#fca5a5]"
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    {modalFeedback.type === "success" ? (
-                      <CheckCircle2 className="w-4 h-4 shrink-0" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                    )}
-                    <span>{modalFeedback.text}</span>
-                  </div>
-                  {modalFeedback.directUrl && (
-                    <a
-                      href={modalFeedback.directUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-semibold whitespace-nowrap"
-                    >
-                      Open WhatsApp
-                    </a>
+                  {modalFeedback.type === "success" ? (
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 shrink-0" />
                   )}
+                  <span>{modalFeedback.text}</span>
                 </div>
               )}
 
@@ -1254,78 +1224,31 @@ function AdminCalendarView() {
                 </div>
               )}
 
-              {/* WhatsApp & Google Calendar Integration Actions */}
+              {/* Customer Invitation & Booking Page Actions */}
               <div className="space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                  WhatsApp &amp; Google Calendar Actions
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#aaaaaa] block">
+                  Customer Invitation &amp; Access Actions
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <button
                     type="button"
-                    onClick={() => handleDispatchWhatsApp("BOTH")}
-                    disabled={isSendingWhatsApp}
-                    className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer"
+                    onClick={handleSendConfirmationEmail}
+                    disabled={isSendingEmail}
+                    className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-full bg-[#272727] hover:bg-[#333333] text-[#f1f1f1] border border-[#383838] text-xs font-semibold transition cursor-pointer disabled:opacity-50"
                   >
-                    <Send className="w-3.5 h-3.5" />
-                    {isSendingWhatsApp
-                      ? "Sending WhatsApp..."
-                      : "Notify Customer & Admin (WhatsApp)"}
+                    <Send className="w-3.5 h-3.5 text-[#f472b6]" />
+                    {isSendingEmail
+                      ? "Sending Invitation..."
+                      : "Send Confirmation Email (Token Invite)"}
                   </button>
-
-                  <a
-                    href={`https://wa.me/${selectedBooking.clientPhone
-                      .replace(/[^\d]/g, "")
-                      .replace(/^0/, "60")}?text=${encodeURIComponent(
-                      `Hi ${selectedBooking.clientName}, this is EasyBook Studio regarding your ${
-                        selectedBooking.service.category || ""
-                      } booking (${selectedBooking.service.name}) on ${format(
-                        parseISO(selectedBooking.startTime),
-                        "dd MMM yyyy, hh:mm a"
-                      )} (${formatMYR(selectedBooking.totalAmount)}).`
-                    )}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-slate-200 hover:text-emerald-300 border border-white/10 text-xs font-semibold transition"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
-                    1-Click Chat Customer on WhatsApp
-                  </a>
-
-                  <a
-                    href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-                      `[${selectedBooking.service.category || "Photoshoot"}] ${
-                        selectedBooking.clientName
-                      } - ${selectedBooking.service.name}`
-                    )}&dates=${new Date(selectedBooking.startTime)
-                      .toISOString()
-                      .replace(/-|:|\.\d\d\d/g, "")}/${new Date(
-                      selectedBooking.endTime
-                    )
-                      .toISOString()
-                      .replace(/-|:|\.\d\d\d/g, "")}&details=${encodeURIComponent(
-                      `Client: ${selectedBooking.clientName}\nPhone: ${
-                        selectedBooking.clientPhone
-                      }\nEmail: ${selectedBooking.clientEmail}\nCategory: ${
-                        selectedBooking.service.category || "Indoor Photoshoot"
-                      }\nPackage: ${selectedBooking.service.name}\nAmount: ${formatMYR(
-                        selectedBooking.totalAmount
-                      )}`
-                    )}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-semibold transition"
-                  >
-                    <CalendarPlus className="w-3.5 h-3.5" />
-                    Add to Google Calendar
-                  </a>
 
                   <Link
                     href={`/booking/manage/${selectedBooking.manageToken}`}
                     target="_blank"
-                    className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs font-semibold transition"
+                    className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-full bg-[#272727] hover:bg-[#333333] text-[#f1f1f1] border border-[#383838] text-xs font-semibold transition"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Open Customer Portal
+                    <ExternalLink className="w-3.5 h-3.5 text-[#aaaaaa]" />
+                    Open Customer Booking Page
                   </Link>
                 </div>
               </div>
