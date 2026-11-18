@@ -39,6 +39,7 @@ interface SystemEnvDefaults {
   hasEnvTelegramBotToken?: boolean;
   hasEnvTelegramChatId?: boolean;
   emailConfigured?: boolean;
+  emailProvider?: "brevo" | "resend" | "none";
   emailFrom?: string;
 }
 
@@ -448,8 +449,12 @@ export default function AdminProfilePage() {
                   <span>
                     Customer Email:{" "}
                     {emailNotifyCustomer
-                      ? envDefaults?.emailConfigured
+                      ? envDefaults?.emailProvider === "brevo"
+                        ? "Token Invite Active (Brevo Connected)"
+                        : envDefaults?.emailProvider === "resend"
                         ? "Token Invite Active (Resend Connected)"
+                        : envDefaults?.emailConfigured
+                        ? "Token Invite Active (Email Connected)"
                         : "Token Invite Active (Token Link Mode)"
                       : "Disabled"}
                   </span>
@@ -719,18 +724,22 @@ export default function AdminProfilePage() {
                   <div>
                     <h3 className="text-sm sm:text-base font-bold text-[#f1f1f1] flex items-center gap-2">
                       Customer Token-Based Email Invitations
-                      {envDefaults?.emailConfigured ? (
+                      {envDefaults?.emailProvider === "brevo" ? (
                         <span className="text-[10px] uppercase font-bold bg-[#0e2a1b] text-[#4ade80] border border-[#164e2d] px-2 py-0.5 rounded-full">
-                          Resend Key Detected
+                          Brevo Connected (300/day Free)
+                        </span>
+                      ) : envDefaults?.emailProvider === "resend" ? (
+                        <span className="text-[10px] uppercase font-bold bg-[#0e2a1b] text-[#4ade80] border border-[#164e2d] px-2 py-0.5 rounded-full">
+                          Resend Connected
                         </span>
                       ) : (
                         <span className="text-[10px] uppercase font-bold bg-[#2a220e] text-[#facc15] border border-[#544315] px-2 py-0.5 rounded-full">
-                          Needs RESEND_API_KEY
+                          Needs BREVO_API_KEY
                         </span>
                       )}
                     </h3>
                     <p className="text-xs text-[#aaaaaa]">
-                      Automatically emails confirmed customers their booking summary &amp; private token link (<code className="text-[#f1f1f1]">/booking/manage/[token]</code>).
+                      Automatically emails confirmed customers their booking summary &amp; private token link (<code className="text-[#f1f1f1]">/booking/manage/[token]</code>) to the exact email they used when booking.
                     </p>
                   </div>
                 </div>
@@ -747,21 +756,21 @@ export default function AdminProfilePage() {
 
               <div className="p-4 rounded-xl bg-[#121212] border border-[#2a2a2a] space-y-2 text-xs text-[#aaaaaa]">
                 <span className="font-semibold text-[#f1f1f1] block">
-                  How the Token-Based Invitation Pattern works:
+                  How Customer Token-Based Email Invitations work:
                 </span>
                 <p className="leading-relaxed">
-                  1. When a booking is confirmed, EasyBook generates a unique passwordless access token (<code className="text-[#f1f1f1]">manageToken</code>) for that customer.
+                  1. When a customer completes a photoshoot booking, EasyBook generates a unique passwordless token (<code className="text-[#f1f1f1]">manageToken</code>).
                 </p>
                 <p className="leading-relaxed">
-                  2. An invitation email is sent via Resend containing all photoshoot details (reference, category, package, date, time, RM amount) plus a direct button to their personal booking page.
+                  2. An automated invitation email is dispatched to the customer&apos;s email with their package details, slot time, RM price, and direct link to their booking page.
                 </p>
                 <p className="leading-relaxed">
-                  3. Remember to set <code className="text-[#f1f1f1]">RESEND_API_KEY</code> (and <code className="text-[#f1f1f1]">EMAIL_FROM</code> with a verified domain for external recipients) in your environment variables.
+                  3. <strong>Brevo (Recommended):</strong> Add <code className="text-[#f1f1f1]">BREVO_API_KEY</code> and <code className="text-[#f1f1f1]">BREVO_SENDER_EMAIL</code> to Vercel/env to email any customer immediately without purchasing a domain.
                 </p>
               </div>
 
               <div className="text-[11px] text-[#717171]">
-                Sending from: <code className="text-[#aaaaaa]">{envDefaults?.emailFrom || "EasyBook Studio <onboarding@resend.dev>"}</code>
+                Sender: <code className="text-[#aaaaaa]">{envDefaults?.emailFrom || "EasyBook Studio <haziqamani509@gmail.com>"}</code>
               </div>
 
               <div>
@@ -788,7 +797,7 @@ export default function AdminProfilePage() {
                   </button>
                 </div>
                 <p className="text-[11px] text-[#717171] mt-1 text-right">
-                  Tip: In Resend Sandbox mode (<code className="text-[#999999]">onboarding@resend.dev</code>), enter your registered Resend email address.
+                  Tip: With Brevo configured, enter any recipient email to test instant delivery.
                 </p>
               </div>
             </div>

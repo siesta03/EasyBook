@@ -4,6 +4,11 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { COOKIE_NAME, verifyAdminToken, signAdminToken } from "@/lib/auth";
+import {
+  getActiveEmailProvider,
+  isEmailConfigured,
+  getSenderInfo,
+} from "@/lib/email";
 
 async function getAuthenticatedAdmin() {
   const cookieStore = await cookies();
@@ -108,8 +113,9 @@ async function formatAdminResponse(admin: {
       envGoogleCalendarId: process.env.GOOGLE_CALENDAR_ID || "",
       hasEnvTelegramBotToken: !!process.env.TELEGRAM_BOT_TOKEN,
       hasEnvTelegramChatId: !!process.env.TELEGRAM_CHAT_ID,
-      emailConfigured: !!process.env.RESEND_API_KEY,
-      emailFrom: process.env.EMAIL_FROM || "EasyBook Studio <onboarding@resend.dev>",
+      emailConfigured: isEmailConfigured(),
+      emailProvider: getActiveEmailProvider(),
+      emailFrom: `${getSenderInfo().name} <${getSenderInfo().email}>`,
     },
     recentLogs,
   });

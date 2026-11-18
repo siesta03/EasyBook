@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
   buildTokenInvitationEmail,
+  getActiveEmailProvider,
   isEmailConfigured,
   sendEmail,
 } from "@/lib/email";
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "RESEND_API_KEY is not set. Add it in Vercel → Settings → Environment Variables (and in your local .env), then redeploy.",
+            "No email API key configured. Set BREVO_API_KEY (recommended) or RESEND_API_KEY in Vercel → Settings → Environment Variables (and in local .env), then redeploy.",
         },
         { status: 400 }
       );
@@ -66,10 +67,14 @@ export async function POST(request: Request) {
 
     const result = await sendEmail({
       to,
+      toName: "Customer Preview",
       subject: `[Test] ${invitation.subject}`,
       html: invitation.html,
       text: invitation.plainText,
     });
+
+    const activeProvider = result.provider || getActiveEmailProvider();
+    const providerLabel = activeProvider === "brevo" ? "Brevo" : "Resend";
 
     await prisma.notificationLog.create({
       data: {
@@ -80,12 +85,12 @@ export async function POST(request: Request) {
         message: invitation.plainText,
         status: result.ok ? "SENT" : "FAILED",
         metadata: JSON.stringify({
-          provider: "resend",
-          resendId: result.id || null,
+          provider: activeProvider,
+          externalId: result.id || null,
           manageToken: "sample-token-preview",
           invitationUrl: invitation.invitationUrl,
           deliveryNote: result.ok
-            ? `Test token invitation emailed to ${to}`
+            ? `Test token invitation emailed to ${to} via ${providerLabel}`
             : `Email error: ${result.error}`,
           sentAt: new Date().toISOString(),
         }),
@@ -99,12 +104,13 @@ export async function POST(request: Request) {
 
       const friendlyError = isSandbox
         ? `${result.error}`
-        : `Resend rejected the email: ${result.error}`;
+        : `${providerLabel} rejected the email: ${result.error}`;
 
       return NextResponse.json(
         {
           error: friendlyError,
           isSandboxRestriction: isSandbox,
+          provider: activeProvider,
         },
         { status: 400 }
       );
@@ -112,8 +118,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Test token invitation email sent to ${to}`,
+      message: `Test token invitation email sent to ${to} via ${providerLabel}`,
       invitationUrl: invitation.invitationUrl,
+      provider: activeProvider,
     });
   } catch (error) {
     console.error("[Test Email] Error:", error);

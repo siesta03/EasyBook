@@ -22,6 +22,7 @@ export interface BookingNotificationPayload {
     totalAmount: number | string | { toString(): string };
     notes?: string | null;
     manageToken?: string;
+    status?: string;
   };
   service?: {
     name: string;

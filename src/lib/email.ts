@@ -4,16 +4,18 @@ import { formatMYR } from "./categories";
 import type { BookingNotificationPayload } from "./whatsapp";
 
 /**
- * Customer Token-Based Invitation emails via Resend (https://resend.com).
+ * Customer Token-Based Invitation emails via Brevo (https://brevo.com) or Resend (https://resend.com).
  *
- * Customers receive an email containing their confirmed booking details and a
- * direct Token-Based Invitation URL (`/booking/manage/<manageToken>`) so they
- * can view, sync to calendar, or manage their booking without creating an account.
+ * Customers automatically receive an email containing their confirmed booking details and a
+ * direct Token-Based Invitation URL (`/booking/manage/<manageToken>`) sent to the exact
+ * email address they used when booking.
  *
- * Required env vars (set in Vercel / .env):
- *   RESEND_API_KEY  – API key from https://resend.com/api-keys
- *   EMAIL_FROM      – e.g. "EasyBook Studio <bookings@yourdomain.com>"
- *                     (defaults to Resend's test sender onboarding@resend.dev)
+ * Supported env vars (set in Vercel / .env):
+ *   BREVO_API_KEY       – API key from Brevo (starts with xkeysib-...) [RECOMMENDED: 300 free emails/day to any recipient]
+ *   BREVO_SENDER_EMAIL  – e.g. "haziqamani509@gmail.com" (defaults to EMAIL_FROM or signup email)
+ *   BREVO_SENDER_NAME   – e.g. "EasyBook Studio"
+ *   RESEND_API_KEY      – Fallback: API key from https://resend.com/api-keys
+ *   EMAIL_FROM          – e.g. "EasyBook Studio <haziqamani509@gmail.com>"
  */
 
 export interface EmailDispatchResult {
@@ -23,9 +25,42 @@ export interface EmailDispatchResult {
   error?: string;
   logId?: string;
   invitationUrl?: string;
+  provider?: "brevo" | "resend" | "none";
 }
 
-const DEFAULT_FROM = "EasyBook Studio <onboarding@resend.dev>";
+const DEFAULT_SENDER_NAME = "EasyBook Studio";
+const DEFAULT_SENDER_EMAIL = "haziqamani509@gmail.com";
+const DEFAULT_RESEND_FROM = "EasyBook Studio <onboarding@resend.dev>";
+
+export interface SenderInfo {
+  name: string;
+  email: string;
+}
+
+/**
+ * Resolve the sender name & email from environment variables.
+ */
+export function getSenderInfo(): SenderInfo {
+  const raw =
+    process.env.BREVO_SENDER_EMAIL ||
+    process.env.EMAIL_FROM ||
+    DEFAULT_SENDER_EMAIL;
+
+  const match = raw.match(/^(?:(?:"?([^"<]+)"?\s*)?<)?([^>]+)>?$/);
+  if (match) {
+    const name =
+      process.env.BREVO_SENDER_NAME ||
+      match[1]?.trim() ||
+      DEFAULT_SENDER_NAME;
+    const email = match[2]?.trim() || DEFAULT_SENDER_EMAIL;
+    return { name, email };
+  }
+
+  return {
+    name: process.env.BREVO_SENDER_NAME || DEFAULT_SENDER_NAME,
+    email: raw.trim() || DEFAULT_SENDER_EMAIL,
+  };
+}
 
 function escapeHtml(text: string): string {
   return text
@@ -271,56 +306,139 @@ export function buildTokenInvitationEmail(
   return { subject, heading, invitationUrl, html, plainText };
 }
 
-/**
- * Low-level Resend call.
- */
-export async function sendEmail({
-  to,
-  subject,
-  html,
-  text,
-}: {
-  to: string;
-  subject: string;
-  html: string;
-  text?: string;
-}): Promise<{ ok: boolean; id?: string; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    return { ok: false, error: "RESEND_API_KEY is not set" };
-  }
-
-  try {
-    const resp = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: process.env.EMAIL_FROM || DEFAULT_FROM,
-        to: [to],
-        subject,
-        html,
-        text,
-      }),
-    });
-    const data = (await resp.json().catch(() => ({}))) as {
-      id?: string;
-      message?: string;
-      error?: string;
-    };
-    if (!resp.ok) {
-      return { ok: false, error: data.message || data.error || `HTTP ${resp.status}` };
-    }
-    return { ok: true, id: data.id };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Network error" };
-  }
+export function getActiveEmailProvider(): "brevo" | "resend" | "none" {
+  if (process.env.BREVO_API_KEY) return "brevo";
+  if (process.env.RESEND_API_KEY) return "resend";
+  return "none";
 }
 
 export function isEmailConfigured(): boolean {
-  return !!process.env.RESEND_API_KEY;
+  return getActiveEmailProvider() !== "none";
+}
+
+export interface SendEmailOptions {
+  to: string;
+  toName?: string;
+  subject: string;
+  html: string;
+  text?: string;
+}
+
+export interface SendEmailResult {
+  ok: boolean;
+  id?: string;
+  error?: string;
+  provider?: "brevo" | "resend";
+}
+
+/**
+ * Dispatch transactional email via Brevo REST API (default) or Resend (fallback).
+ */
+export async function sendEmail({
+  to,
+  toName,
+  subject,
+  html,
+  text,
+}: SendEmailOptions): Promise<SendEmailResult> {
+  const brevoApiKey = process.env.BREVO_API_KEY;
+  const resendApiKey = process.env.RESEND_API_KEY;
+
+  // 1. PRIMARY: Brevo REST API (https://api.brevo.com/v3/smtp/email)
+  if (brevoApiKey) {
+    const sender = getSenderInfo();
+    try {
+      const resp = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "api-key": brevoApiKey,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          sender: {
+            name: sender.name,
+            email: sender.email,
+          },
+          to: [
+            {
+              email: to,
+              ...(toName ? { name: toName } : {}),
+            },
+          ],
+          subject,
+          htmlContent: html,
+          ...(text ? { textContent: text } : {}),
+        }),
+      });
+
+      const data = (await resp.json().catch(() => ({}))) as {
+        messageId?: string;
+        message?: string;
+        code?: string;
+      };
+
+      if (!resp.ok) {
+        return {
+          ok: false,
+          error: data.message || data.code || `Brevo HTTP ${resp.status}`,
+          provider: "brevo",
+        };
+      }
+
+      return { ok: true, id: data.messageId, provider: "brevo" };
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : "Brevo network error",
+        provider: "brevo",
+      };
+    }
+  }
+
+  // 2. FALLBACK: Resend REST API (https://api.resend.com/emails)
+  if (resendApiKey) {
+    try {
+      const resp = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM || DEFAULT_RESEND_FROM,
+          to: [to],
+          subject,
+          html,
+          text,
+        }),
+      });
+      const data = (await resp.json().catch(() => ({}))) as {
+        id?: string;
+        message?: string;
+        error?: string;
+      };
+      if (!resp.ok) {
+        return {
+          ok: false,
+          error: data.message || data.error || `Resend HTTP ${resp.status}`,
+          provider: "resend",
+        };
+      }
+      return { ok: true, id: data.id, provider: "resend" };
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : "Resend network error",
+        provider: "resend",
+      };
+    }
+  }
+
+  return {
+    ok: false,
+    error: "No email service configured. Set BREVO_API_KEY (or RESEND_API_KEY) in environment variables.",
+  };
 }
 
 /**
@@ -332,7 +450,12 @@ export async function sendCustomerEmailNotification(
 ): Promise<EmailDispatchResult> {
   try {
     // Only email customers on confirmation (or reschedule / cancel / manual forceSend)
-    if (payload.eventType === "BOOKING_CREATED" && !payload.forceSend) {
+    // If booking was created already in CONFIRMED state, allow sending
+    if (
+      payload.eventType === "BOOKING_CREATED" &&
+      payload.booking?.status !== "CONFIRMED" &&
+      !payload.forceSend
+    ) {
       return {
         success: false,
         status: "SKIPPED",
@@ -355,6 +478,7 @@ export async function sendCustomerEmailNotification(
     }
 
     const invitation = buildTokenInvitationEmail(payload);
+    const activeProvider = getActiveEmailProvider();
 
     if (!isEmailConfigured()) {
       const log = await prisma.notificationLog.create({
@@ -377,7 +501,7 @@ export async function sendCustomerEmailNotification(
             subject: invitation.subject,
             provider: "token-invitation",
             deliveryNote:
-              "Token invitation generated (Set RESEND_API_KEY in env to send live emails)",
+              "Token invitation generated (Set BREVO_API_KEY in env to send live emails)",
             sentAt: new Date().toISOString(),
           }),
         },
@@ -388,11 +512,13 @@ export async function sendCustomerEmailNotification(
         status: "SIMULATED",
         logId: log.id,
         invitationUrl: invitation.invitationUrl,
+        provider: "none",
       };
     }
 
     const result = await sendEmail({
       to,
+      toName: payload.booking?.clientName,
       subject: invitation.subject,
       html: invitation.html,
       text: invitation.plainText,
@@ -409,10 +535,11 @@ export async function sendCustomerEmailNotification(
       ? "SIMULATED"
       : "FAILED";
 
+    const providerName = result.provider === "brevo" ? "Brevo" : "Resend";
     const deliveryNote = result.ok
-      ? `Token invitation emailed to ${to} via Resend`
+      ? `Token invitation emailed to ${to} via ${providerName}`
       : isSandboxRestriction
-      ? "Token invitation link generated (Verify domain in Resend to deliver to external customer emails)"
+      ? "Token invitation link generated (Verify domain in Resend or use Brevo to deliver to external customer emails)"
       : `Email error: ${result.error || "unknown"}`;
 
     const log = await prisma.notificationLog.create({
@@ -433,8 +560,8 @@ export async function sendCustomerEmailNotification(
           category: payload.service?.category || null,
           packageName: payload.service?.name || null,
           subject: invitation.subject,
-          provider: "resend",
-          resendId: result.id || null,
+          provider: result.provider || activeProvider,
+          externalId: result.id || null,
           deliveryNote,
           sentAt: new Date().toISOString(),
         }),
@@ -446,6 +573,7 @@ export async function sendCustomerEmailNotification(
       status,
       logId: log.id,
       invitationUrl: invitation.invitationUrl,
+      provider: result.provider || activeProvider,
       error: result.ok || isSandboxRestriction ? undefined : result.error,
     };
   } catch (error) {

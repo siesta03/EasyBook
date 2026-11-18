@@ -49,63 +49,53 @@ Because Telegram has an open, official Bot API, your backend communicates direct
 
 ---
 
-## Part 2: Customer Email Invitations via Resend
+## Part 2: Customer Email Invitations via Brevo (Recommended — Free & No Domain Needed)
 
-EasyBook uses **Resend** (https://resend.com) to send Token-Based Invitation emails to confirmed customers. The email contains photoshoot details and a private, passwordless management link (`/booking/manage/[manageToken]`).
+EasyBook uses **Brevo** (formerly Sendinblue — [https://www.brevo.com](https://www.brevo.com)) to send Token-Based Invitation emails to confirmed customers.
+- **300 free emails per day** (9,000 emails/month).
+- **Sends to ANY customer email address immediately** without needing to buy or verify a custom DNS domain!
+- Customers automatically receive their photoshoot summary (reference, package, date, time in MYT, RM total) and a direct passwordless link (`/booking/manage/[manageToken]`).
 
-### Step 1: Sign up & Get an API Key
-1. Sign up for a free account at [https://resend.com/signup](https://resend.com/signup) (free tier includes 3,000 emails/month).
-2. Go to **API Keys** ([https://resend.com/api-keys](https://resend.com/api-keys)).
-3. Click **"Create API Key"**, give it a name (e.g., `EasyBook`), and copy the key (starts with `re_...`).
+### Step 1: Sign up & Get an API Key in Brevo
+1. Create a free account at [https://app.brevo.com](https://app.brevo.com) using your email (e.g. `haziqamani509@gmail.com`).
+2. Once logged in, click your account name / profile icon in the top-right corner.
+3. Select **"SMTP & API"** (or directly open [https://app.brevo.com/settings/keys/api](https://app.brevo.com/settings/keys/api)).
+4. Click **"Generate a new API key"**.
+5. Give it a name (e.g., `EasyBook`).
+6. Copy your API key (starts with `xkeysib-...`).
+   > *Note: Store this key safely — Brevo only displays it once.*
 
-### Step 2: Add API Key to Environment
-1. In **Vercel Dashboard** ➔ Your Project ➔ **Settings** ➔ **Environment Variables**:
-   - `RESEND_API_KEY`: `re_your_api_key_here`
-   - *(Optional)* `EMAIL_FROM`: `EasyBook Studio <onboarding@resend.dev>` *(default sandbox sender)*
-2. In your local `.env` file, add the same variable.
-3. Redeploy on Vercel (or trigger a new build) so the environment variable takes effect.
+### Step 2: Add to Vercel & Local Environment
+1. In **Vercel Dashboard ➔ Settings ➔ Environment Variables**, add:
+   - `BREVO_API_KEY`: `xkeysib-your_brevo_api_key_here`
+   - `BREVO_SENDER_EMAIL`: `haziqamani509@gmail.com` *(or your registered Brevo email)*
+   - `BREVO_SENDER_NAME`: `EasyBook Studio`
+2. In your local `.env` file, add the same variables:
+   ```env
+   BREVO_API_KEY="xkeysib-your_brevo_api_key_here"
+   BREVO_SENDER_EMAIL="haziqamani509@gmail.com"
+   BREVO_SENDER_NAME="EasyBook Studio"
+   ```
+3. Trigger a redeploy on Vercel so the environment variables take effect.
 
-### Step 3: Test Email (Sandbox Mode)
-> [!IMPORTANT]
-> **Understanding Resend Sandbox Mode (`onboarding@resend.dev`):**
-> On Resend's free tier without a verified domain, Resend **only permits sending emails to the email address registered on your Resend account** (e.g., `haziqamani509@gmail.com`).
-> If you test sending to any other email, Resend will reject with:
-> `You can only send testing emails to your own email address...`
-
-1. Go to **Admin Profile** (`/admin/profile?tab=alerts`).
-2. Under **Customer Token-Based Email Invitations**, type your **registered Resend email** (`haziqamani509@gmail.com`) into the test field.
-3. Click **"Send Test Token Email"**.
-4. Check your inbox: you will receive a test invitation with the private token link!
+### Step 3: Test Real Email Delivery
+1. Open EasyBook Admin: **Admin Profile ➔ Telegram & Email Alerts** tab.
+2. Under **Customer Token-Based Email Invitations**, you will see the green badge:
+   `Brevo Connected (300/day Free)`
+3. Enter any recipient email in the test input (your own email, a friend's email, or any test address).
+4. Click **"Send Test Token Email"**.
+5. You will receive the branded invitation email in seconds!
 
 ---
 
-## Part 3: Setting Up a Custom Domain (To Email Any Customer)
+## Part 3: Alternative Provider — Resend (Requires Custom Domain for External Customers)
 
-If you want to send invitations to real customer email addresses (not just your own Resend account email), you need to verify a domain you own.
-
-> [!WARNING]
-> **Do NOT type `easybook.com` in Resend Domains:**
-> You can only verify domains that **you personally own and manage DNS records for**. `easybook.com` is owned by an external company, so Resend cannot verify it.
-
-### How to configure your domain:
-1. **Acquire a domain** (if you don't already have one) from a registrar like Cloudflare Registrar, Namecheap, Hostinger, or GoDaddy (usually RM30–RM50 / \$8–\$10 per year, e.g., `easybookstudio.my` or `haziqstudio.com`).
-2. In [Resend Domains](https://resend.com/domains), click **"Add domain"**:
-   - Enter your domain (e.g. `easybookstudio.my` or a subdomain like `mail.easybookstudio.my`).
-   - Select Region: **Tokyo (`ap-northeast-1`)** or **Singapore**.
-   - Click **Add domain**.
-3. Resend will display DNS records to add:
-   - **DKIM** (Type `TXT` or `CNAME`, Host `resend._domainkey`)
-   - **SPF** (Type `TXT`, Host `send` or `@`)
-   - **Return-Path / MX** (Type `MX` / `CNAME`)
-4. Open your domain provider's DNS settings (Cloudflare, Namecheap, etc.) and add the records provided by Resend.
-5. In Resend, click **"Verify DNS Records"**. Once status is **Verified** (green), your domain is ready!
-6. In **Vercel ➔ Settings ➔ Environment Variables**, add or update:
-   - `EMAIL_FROM`: `EasyBook Studio <bookings@easybookstudio.my>`
-7. Redeploy. EasyBook will now automatically send invitations from your branded domain to any customer worldwide!
-
-> [!NOTE]
-> **What happens if you don't have a custom domain yet?**
-> EasyBook includes built-in protection: when a customer books with an external email while in Resend sandbox mode, EasyBook **does not fail or crash the booking**. It safely logs the invitation as `SIMULATED` in **Admin ➔ Notifications**, preserving the direct token invitation link (`/booking/manage/[token]`) so you can copy and share it with the customer at any time.
+If you already use **Resend** ([https://resend.com](https://resend.com)):
+1. Add `RESEND_API_KEY="re_..."` and `EMAIL_FROM="EasyBook Studio <onboarding@resend.dev>"` to your environment variables.
+2. In Resend free sandbox mode, you can **only** send test emails to your registered account email (`haziqamani509@gmail.com`).
+3. To send to external customer emails using Resend, you must purchase a domain (e.g., `easybookstudio.my`), add it under [Resend Domains](https://resend.com/domains), and configure 3 DNS records (DKIM, SPF, MX).
+   > *Do NOT type `easybook.com` in Resend, because you must own the domain to verify DNS records.*
+4. If you do not have a custom domain, use **Brevo (Part 2 above)** instead.
 
 ---
 
@@ -119,9 +109,12 @@ Add these in **Vercel Dashboard ➔ Settings ➔ Environment Variables**:
 | `JWT_SECRET` | Yes | Custom secret string | Signs admin session cookies |
 | `TIMEZONE` | Yes | `Asia/Kuala_Lumpur` | Studio operating timezone |
 | `NEXT_PUBLIC_APP_URL` | Yes | `https://your-app.vercel.app` | Public studio URL |
-| `TELEGRAM_BOT_TOKEN` | Optional | Telegram `@BotFather` | (Can also be set in Admin Profile UI) |
-| `TELEGRAM_CHAT_ID` | Optional | EasyBook Auto-Detect | (Can also be set in Admin Profile UI) |
-| `RESEND_API_KEY` | Optional | `resend.com` | Powers customer email invitations |
-| `EMAIL_FROM` | Optional | Your verified domain | Custom sender address (e.g., `EasyBook Studio <bookings@yourdomain.com>`) |
+| `TELEGRAM_BOT_TOKEN` | Optional | Telegram `@BotFather` | Powers Admin Telegram alerts |
+| `TELEGRAM_CHAT_ID` | Optional | EasyBook Auto-Detect | Admin Telegram chat ID |
+| `BREVO_API_KEY` | Recommended | `app.brevo.com` ➔ SMTP & API | Powers customer email invitations (300/day free to any email) |
+| `BREVO_SENDER_EMAIL` | Optional | Your Brevo account email | e.g. `haziqamani509@gmail.com` |
+| `BREVO_SENDER_NAME` | Optional | Custom name | e.g. `EasyBook Studio` |
+| `RESEND_API_KEY` | Optional | `resend.com` | Alternative email provider |
+| `EMAIL_FROM` | Optional | Your domain | Alternative sender string |
 
 
