@@ -107,33 +107,42 @@ export function toEmailHtml(text: string, heading: string): string {
 </html>`;
 }
 
+function formatClientName(name?: string): string {
+  if (!name) return "Valued Client";
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
 function getSubject(eventType: BookingNotificationPayload["eventType"]): string {
   switch (eventType) {
     case "BOOKING_CONFIRMED":
-      return "Booking Confirmed & Private Access Link – EasyBook Studio";
+      return "Booking Confirmed — EasyBook Studio";
     case "BOOKING_RESCHEDULED":
-      return "Booking Rescheduled – Updated Invitation Link – EasyBook Studio";
+      return "Booking Rescheduled — EasyBook Studio";
     case "BOOKING_CANCELLED":
-      return "Booking Cancelled – EasyBook Studio";
+      return "Booking Cancelled — EasyBook Studio";
     case "BOOKING_CREATED":
-      return "Booking Details & Access Link – EasyBook Studio";
+      return "Booking Reserved — EasyBook Studio";
     default:
-      return "Booking Invitation Preview – EasyBook Studio";
+      return "Booking Details — EasyBook Studio";
   }
 }
 
 function getHeading(eventType: BookingNotificationPayload["eventType"]): string {
   switch (eventType) {
     case "BOOKING_CONFIRMED":
-      return "Booking Confirmed — Your Photoshoot Invitation";
+      return "Your Photoshoot is Confirmed!";
     case "BOOKING_RESCHEDULED":
-      return "Booking Rescheduled — Updated Session Details";
+      return "Photoshoot Rescheduled";
     case "BOOKING_CANCELLED":
-      return "Booking Cancelled";
+      return "Photoshoot Cancelled";
     case "BOOKING_CREATED":
-      return "Booking Reserved — Studio Session Details";
+      return "Photoshoot Reserved";
     default:
-      return "Sample Booking Invitation (Token-Based)";
+      return "Photoshoot Details";
   }
 }
 
@@ -146,19 +155,19 @@ export interface BuiltTokenInvitation {
 }
 
 /**
- * Build a Token-Based Invitation Email listing all booking details and a
- * direct passwordless link (`/booking/manage/<manageToken>`) to the customer's booking page.
+ * Build a clean, customer-friendly email invitation without raw tokens or UUID references.
+ * Contains confirmed photoshoot details and a direct action button to view/manage their session.
  */
 export function buildTokenInvitationEmail(
   payload: BookingNotificationPayload
 ): BuiltTokenInvitation {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const cleanAppUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/+$/, "");
   const timezone = process.env.TIMEZONE || "Asia/Kuala_Lumpur";
   const { eventType, booking, service } = payload;
 
   const invitationUrl = booking?.manageToken
-    ? `${appUrl}/booking/manage/${booking.manageToken}`
-    : appUrl;
+    ? `${cleanAppUrl}/booking/manage/${booking.manageToken}`
+    : cleanAppUrl;
 
   const startDate = booking ? new Date(booking.startTime) : new Date();
   const endDate = booking ? new Date(booking.endTime) : new Date();
@@ -168,39 +177,38 @@ export function buildTokenInvitationEmail(
   const categoryName = service?.category || "Indoor Photoshoot";
   const packageName = service?.name || "Photoshoot Session";
   const durationMins = service?.durationMinutes || 60;
-  const clientName = booking?.clientName || "Valued Client";
-  const bookingId = booking?.id || "N/A";
-  const manageToken = booking?.manageToken || "N/A";
+  const clientName = formatClientName(booking?.clientName);
 
   const subject = getSubject(eventType);
   const heading = getHeading(eventType);
 
   const introLine =
     eventType === "BOOKING_CANCELLED"
-      ? `Hi ${clientName}, your photoshoot booking listed below has been cancelled. You can still view the record or book another session using your link below.`
+      ? `Hi ${clientName}, your photoshoot booking listed below has been cancelled. If you would like to book a new session, please visit our studio booking portal below.`
       : eventType === "BOOKING_RESCHEDULED"
-      ? `Hi ${clientName}, your photoshoot session has been rescheduled. Please review your updated schedule and invitation link below.`
-      : `Hi ${clientName}, your photoshoot booking is confirmed! Use your private token-based invitation link below to view your booking page, add to your calendar, or manage your session — no account or password required.`;
+      ? `Hi ${clientName}, your photoshoot session has been rescheduled. Please review your updated time slot and details below.`
+      : `Hi ${clientName}, your photoshoot booking is confirmed! We look forward to welcoming you to EasyBook Studio. Review your session schedule below and click the button to view or manage your booking.`;
 
   const plainLines = [
-    "EasyBook Studio — Booking Invitation",
-    "━━━━━━━━━━━━━━━━━━",
+    `EasyBook Studio — ${subject}`,
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
     introLine,
     "",
-    `Booking Reference: ${bookingId}`,
-    `Access Token: ${manageToken}`,
-    `Category: ${categoryName}`,
-    `Package: ${packageName} (${durationMins} mins)`,
+    "PHOTOSHOOT SCHEDULE",
     `Date: ${formattedDate}`,
     `Time: ${formattedTime} (MYT)`,
-    `Total Amount: ${formattedAmount}`,
-    booking?.notes ? `Notes: ${booking.notes}` : "",
-    "━━━━━━━━━━━━━━━━━━",
-    eventType === "BOOKING_CANCELLED"
-      ? `Book a New Session: ${appUrl}`
-      : `Open Your Booking Page: ${invitationUrl}`,
     "",
-    "Token-Based Invitation Access: Anyone with this personal link can view and manage this booking directly without logging in.",
+    "SESSION DETAILS",
+    `Package: ${packageName} (${durationMins} mins)`,
+    `Category: ${categoryName}`,
+    `Total Paid: ${formattedAmount}`,
+    booking?.notes ? `Notes: ${booking.notes}` : "",
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    eventType === "BOOKING_CANCELLED"
+      ? `Book a New Session: ${cleanAppUrl}`
+      : `View & Manage Your Booking: ${invitationUrl}`,
+    "",
+    "Studio Reminder: Please arrive 10 minutes prior to your session time.",
   ].filter(Boolean);
 
   const plainText = plainLines.join("\n");
@@ -209,7 +217,7 @@ export function buildTokenInvitationEmail(
     eventType === "BOOKING_CANCELLED"
       ? "Book a New Photoshoot"
       : "View & Manage Your Booking";
-  const ctaHref = eventType === "BOOKING_CANCELLED" ? appUrl : invitationUrl;
+  const ctaHref = eventType === "BOOKING_CANCELLED" ? cleanAppUrl : invitationUrl;
 
   const badgeText =
     eventType === "BOOKING_CANCELLED"
@@ -226,79 +234,103 @@ export function buildTokenInvitationEmail(
 
   const html = `<!doctype html>
 <html>
-  <body style="margin:0;padding:24px;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111827">
-    <div style="max-width:580px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb">
-      <div style="background:#0f0f0f;padding:22px 24px;color:#ffffff;border-bottom:3px solid #cc0000">
-        <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#aaaaaa">EasyBook Studio • Token Invitation</div>
-        <div style="font-size:20px;font-weight:700;margin-top:4px">${escapeHtml(heading)}</div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${escapeHtml(subject)}</title>
+  </head>
+  <body style="margin:0;padding:24px;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111827">
+    <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #e5e7eb;box-shadow:0 4px 14px rgba(0,0,0,0.04)">
+      
+      <!-- Studio Header -->
+      <div style="background:#0f0f0f;padding:26px 28px 22px 28px;color:#ffffff;border-bottom:3px solid #cc0000">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#aaaaaa;margin-bottom:6px">
+          EasyBook Studio
+        </div>
+        <div style="font-size:22px;font-weight:800;color:#ffffff;line-height:1.3">
+          ${escapeHtml(heading)}
+        </div>
       </div>
 
-      <div style="padding:24px;font-size:14px;line-height:1.6">
-        <div style="margin-bottom:14px">
-          <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;${badgeStyle}">${badgeText}</span>
+      <!-- Content Body -->
+      <div style="padding:28px 28px 24px 28px;font-size:14px;line-height:1.6">
+        
+        <!-- Status Badge -->
+        <div style="margin-bottom:16px">
+          <span style="display:inline-block;padding:5px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;${badgeStyle}">
+            ${badgeText}
+          </span>
         </div>
 
-        <p style="margin:0 0 18px 0;color:#374151">${escapeHtml(introLine)}</p>
+        <!-- Greeting Copy -->
+        <p style="margin:0 0 22px 0;font-size:15px;line-height:1.6;color:#374151">
+          ${escapeHtml(introLine)}
+        </p>
 
-        <table style="width:100%;border-collapse:collapse;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;font-size:13px">
+        <!-- Prominent Schedule Card -->
+        <div style="background:#f8f9fa;border:1px solid #e5e7eb;border-radius:14px;padding:18px 20px;margin-bottom:22px">
+          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">
+            Photoshoot Schedule
+          </div>
+          <div style="font-size:18px;font-weight:700;color:#111827;margin-bottom:4px">
+            ${escapeHtml(formattedDate)}
+          </div>
+          <div style="font-size:14px;font-weight:600;color:#4b5563">
+            ${escapeHtml(formattedTime)} <span style="font-size:12px;color:#888888;font-weight:normal">(MYT)</span>
+          </div>
+        </div>
+
+        <!-- Session Details (Clean & Minimalist - No UUID or Token) -->
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;border:1px solid #edf0f2;border-radius:12px;overflow:hidden">
           <tbody>
-            <tr>
-              <td style="padding:10px 14px;color:#6b7280;border-bottom:1px solid #e5e7eb;width:38%">Booking Reference</td>
-              <td style="padding:10px 14px;font-weight:600;color:#111827;border-bottom:1px solid #e5e7eb;font-family:monospace">${escapeHtml(bookingId)}</td>
+            <tr style="border-bottom:1px solid #edf0f2">
+              <td style="padding:12px 16px;color:#6b7280;background:#fafbfc;width:34%;font-weight:500">Package</td>
+              <td style="padding:12px 16px;color:#111827;font-weight:600">${escapeHtml(packageName)} (${durationMins} mins)</td>
             </tr>
-            <tr>
-              <td style="padding:10px 14px;color:#6b7280;border-bottom:1px solid #e5e7eb">Access Token</td>
-              <td style="padding:10px 14px;font-weight:600;color:#111827;border-bottom:1px solid #e5e7eb;font-family:monospace">${escapeHtml(manageToken)}</td>
+            <tr style="border-bottom:1px solid #edf0f2">
+              <td style="padding:12px 16px;color:#6b7280;background:#fafbfc;font-weight:500">Category</td>
+              <td style="padding:12px 16px;color:#111827;font-weight:600">${escapeHtml(categoryName)}</td>
             </tr>
-            <tr>
-              <td style="padding:10px 14px;color:#6b7280;border-bottom:1px solid #e5e7eb">Category</td>
-              <td style="padding:10px 14px;font-weight:600;color:#111827;border-bottom:1px solid #e5e7eb">${escapeHtml(categoryName)}</td>
-            </tr>
-            <tr>
-              <td style="padding:10px 14px;color:#6b7280;border-bottom:1px solid #e5e7eb">Package</td>
-              <td style="padding:10px 14px;font-weight:600;color:#111827;border-bottom:1px solid #e5e7eb">${escapeHtml(packageName)} (${durationMins} mins)</td>
-            </tr>
-            <tr>
-              <td style="padding:10px 14px;color:#6b7280;border-bottom:1px solid #e5e7eb">Date</td>
-              <td style="padding:10px 14px;font-weight:600;color:#111827;border-bottom:1px solid #e5e7eb">${escapeHtml(formattedDate)}</td>
-            </tr>
-            <tr>
-              <td style="padding:10px 14px;color:#6b7280;border-bottom:1px solid #e5e7eb">Time Window</td>
-              <td style="padding:10px 14px;font-weight:600;color:#111827;border-bottom:1px solid #e5e7eb">${escapeHtml(formattedTime)}</td>
-            </tr>
-            <tr>
-              <td style="padding:10px 14px;color:#6b7280${booking?.notes ? ";border-bottom:1px solid #e5e7eb" : ""}">Total Amount</td>
-              <td style="padding:10px 14px;font-weight:700;color:#059669${booking?.notes ? ";border-bottom:1px solid #e5e7eb" : ""}">${escapeHtml(formattedAmount)}</td>
+            <tr style="border-bottom:1px solid #edf0f2">
+              <td style="padding:12px 16px;color:#6b7280;background:#fafbfc;font-weight:500">Total Paid</td>
+              <td style="padding:12px 16px;color:#059669;font-weight:700;font-size:15px">${escapeHtml(formattedAmount)}</td>
             </tr>
             ${
               booking?.notes
                 ? `<tr>
-              <td style="padding:10px 14px;color:#6b7280">Session Notes</td>
-              <td style="padding:10px 14px;color:#374151">${escapeHtml(booking.notes)}</td>
+              <td style="padding:12px 16px;color:#6b7280;background:#fafbfc;font-weight:500">Session Notes</td>
+              <td style="padding:12px 16px;color:#374151">${escapeHtml(booking.notes)}</td>
             </tr>`
                 : ""
             }
           </tbody>
         </table>
 
-        <div style="margin:24px 0 18px 0;text-align:center">
-          <a href="${escapeHtml(ctaHref)}" style="display:inline-block;padding:12px 26px;background:#cc0000;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;border-radius:999px">
+        <!-- Primary CTA Button -->
+        <div style="text-align:center;margin:28px 0 24px 0">
+          <a href="${escapeHtml(ctaHref)}" style="display:inline-block;padding:14px 34px;background:#cc0000;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;border-radius:999px;box-shadow:0 4px 10px rgba(204,0,0,0.22);letter-spacing:0.3px">
             ${escapeHtml(ctaLabel)}
           </a>
         </div>
 
-        <div style="padding:12px 14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;font-size:12px;color:#4b5563">
-          <div style="font-weight:600;color:#111827;margin-bottom:4px">Direct Booking Page Link:</div>
-          <a href="${escapeHtml(invitationUrl)}" style="color:#cc0000;word-break:break-all;text-decoration:underline">${escapeHtml(invitationUrl)}</a>
-          <div style="margin-top:6px;color:#6b7280;font-size:11px">
-            This token-based invitation link gives you direct access to view your booking status, add the session to your calendar, or cancel up to 24 hours before your shoot — no login required.
+        <!-- Discrete Direct Link Fallback (Cleaned up, no clunky box) -->
+        <div style="border-top:1px dashed #e5e7eb;padding-top:16px;margin-top:20px;font-size:12px;color:#6b7280;line-height:1.5">
+          <div style="margin-bottom:4px;color:#4b5563;font-weight:500">
+            Button not working? Use this direct link:
           </div>
+          <a href="${escapeHtml(invitationUrl)}" style="color:#cc0000;word-break:break-all;text-decoration:underline;font-size:12px">${escapeHtml(invitationUrl)}</a>
         </div>
+
       </div>
 
-      <div style="padding:16px 24px;background:#f9fafb;color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb">
-        Please arrive 10 minutes before your scheduled slot. Prices are in Malaysian Ringgit (RM).
+      <!-- Studio Footer & Policies -->
+      <div style="padding:18px 28px;background:#f9fafb;color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;line-height:1.5">
+        <div style="font-weight:600;color:#374151;margin-bottom:4px">Studio Information</div>
+        <div>• Please arrive 10 minutes prior to your session time.</div>
+        <div>• You can reschedule or cancel directly from your booking link up to 24 hours in advance.</div>
+        <div style="margin-top:8px;font-size:11px;color:#9ca3af">EasyBook Studio • Prices are in Malaysian Ringgit (RM).</div>
       </div>
+
     </div>
   </body>
 </html>`;

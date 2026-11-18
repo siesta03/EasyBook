@@ -219,8 +219,8 @@ function ManageBookingContent({
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
             <div>
-              <span className="text-[11px] font-mono text-slate-500 uppercase tracking-wider block mb-1">
-                Booking ID: {booking.id}
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                EasyBook Studio
               </span>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
                 Manage Photoshoot Booking
