@@ -764,27 +764,32 @@ export default function AdminProfilePage() {
                 Sending from: <code className="text-[#aaaaaa]">{envDefaults?.emailFrom || "EasyBook Studio <onboarding@resend.dev>"}</code>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-end">
-                <input
-                  type="email"
-                  value={testEmailTo}
-                  onChange={(e) => setTestEmailTo(e.target.value)}
-                  className="sm:w-72 bg-[#121212] border border-[#2a2a2a] rounded-full px-4 py-2 text-xs text-[#f1f1f1] placeholder:text-[#717171] focus:outline-none focus:border-[#3ea6ff]"
-                  placeholder="Send test invitation to..."
-                />
-                <button
-                  type="button"
-                  onClick={handleTestEmail}
-                  disabled={testingEmail}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#272727] hover:bg-[#333333] border border-[#383838] text-[#f1f1f1] rounded-full text-xs font-semibold cursor-pointer disabled:opacity-50"
-                >
-                  {testingEmail ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Mail className="w-3.5 h-3.5 text-[#f472b6]" />
-                  )}
-                  Send Test Token Email
-                </button>
+              <div>
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-end">
+                  <input
+                    type="email"
+                    value={testEmailTo}
+                    onChange={(e) => setTestEmailTo(e.target.value)}
+                    className="sm:w-72 bg-[#121212] border border-[#2a2a2a] rounded-full px-4 py-2 text-xs text-[#f1f1f1] placeholder:text-[#717171] focus:outline-none focus:border-[#3ea6ff]"
+                    placeholder="Send test invitation to..."
+                  />
+                  <button
+                    type="button"
+                    onClick={handleTestEmail}
+                    disabled={testingEmail}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#272727] hover:bg-[#333333] border border-[#383838] text-[#f1f1f1] rounded-full text-xs font-semibold cursor-pointer disabled:opacity-50"
+                  >
+                    {testingEmail ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Mail className="w-3.5 h-3.5 text-[#f472b6]" />
+                    )}
+                    Send Test Token Email
+                  </button>
+                </div>
+                <p className="text-[11px] text-[#717171] mt-1 text-right">
+                  Tip: In Resend Sandbox mode (<code className="text-[#999999]">onboarding@resend.dev</code>), enter your registered Resend email address.
+                </p>
               </div>
             </div>
           </div>

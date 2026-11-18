@@ -93,8 +93,19 @@ export async function POST(request: Request) {
     });
 
     if (!result.ok) {
+      const isSandbox =
+        typeof result.error === "string" &&
+        result.error.toLowerCase().includes("only send testing emails");
+
+      const friendlyError = isSandbox
+        ? `${result.error}`
+        : `Resend rejected the email: ${result.error}`;
+
       return NextResponse.json(
-        { error: `Resend rejected the email: ${result.error}` },
+        {
+          error: friendlyError,
+          isSandboxRestriction: isSandbox,
+        },
         { status: 400 }
       );
     }
